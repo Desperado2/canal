@@ -17,6 +17,7 @@ public class TemplateConfigLoader {
     public static final String  CONF_DIR            = "conf";
     public static final String  CANAL_CONFIG_TMP    = "canal-template.properties";
     public static final String  INSTANCE_CONFIG_TMP = "instance-template.properties";
+    public static final String  TABLE_MAPPING_CONFIG_TMP = "table-mapping-template.json";
 
     public static String loadCanalConfig() {
         return loadFile(CANAL_CONFIG_TMP);
@@ -24,6 +25,10 @@ public class TemplateConfigLoader {
 
     public static String loadInstanceConfig() {
         return loadFile(INSTANCE_CONFIG_TMP);
+    }
+
+    public static String loadTableMappingConfig() {
+        return loadFile(TABLE_MAPPING_CONFIG_TMP);
     }
 
     private static String loadFile(String fileName) {

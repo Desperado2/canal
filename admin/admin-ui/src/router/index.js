@@ -132,6 +132,34 @@ export const constantRoutes = [
     ]
   },
 
+  {
+    path: '/tableMapping',
+    component: Layout,
+    redirect: '/tableMapping/tableMappingEnv',
+    name: 'Table Mapping',
+    meta: { title: 'Table Mapping', icon: 'example' },
+    children: [
+      {
+        path: 'tableMappingEnv',
+        name: '环境管理',
+        component: () => import('@/views/tableMapping/TableMappingEnv'),
+        meta: { title: '环境管理', icon: 'tree' }
+      },
+      {
+        path: 'tableMapping',
+        name: '映射管理',
+        component: () => import('@/views/tableMapping/TableMapping'),
+        meta: { title: '映射管理', icon: 'form' }
+      },
+      {
+        path: 'tableMapping/config',
+        name: '映射配置',
+        component: () => import('@/views/tableMapping/TableMappingConfig'),
+        meta: { title: '映射配置' },
+        hidden: true
+      },
+    ]
+  },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]

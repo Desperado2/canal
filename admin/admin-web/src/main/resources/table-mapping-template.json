@@ -1,0 +1,17 @@
+{
+  "columns": [
+    {
+      "srcField": "",
+      "dstField": ""
+    },
+    {
+      "srcField": "",
+      "dstField": ""
+    }
+  ],
+  "dstPkList": ["id"],
+  "deleteStrategy": "delete",
+  "deleteUpdateField": "",
+  "deleteUpdateValue": "",
+  "needType": ["insert", "update", "delete"]
+}

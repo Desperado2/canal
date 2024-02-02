@@ -2,6 +2,7 @@ package com.alibaba.otter.canal.admin.model;
 
 import io.ebean.Finder;
 import io.ebean.annotation.WhenCreated;
+import io.ebean.annotation.WhenModified;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -10,20 +11,22 @@ import javax.persistence.Transient;
 import java.util.Date;
 
 /**
- * 用户信息实体类
- */
+ * 表结构映射
+ * @author mujingjing
+ * @date 2024/2/2
+ **/
 @Entity
-@Table(name = "canal_user")
+@Table(name = "canal_table_structure_mapping")
 public class TableStructureMapping extends Model {
 
-    public static final UserFinder find = new UserFinder();
+    public static final TableStructureMappingFinder find = new TableStructureMappingFinder();
 
-    public static class UserFinder extends Finder<Long, TableStructureMapping> {
+    public static class TableStructureMappingFinder extends Finder<Long, TableStructureMapping> {
 
         /**
          * Construct using the default EbeanServer.
          */
-        public UserFinder(){
+        public TableStructureMappingFinder(){
             super(TableStructureMapping.class);
         }
 
@@ -31,17 +34,16 @@ public class TableStructureMapping extends Model {
 
     @Id
     private Long   id;
-    private String username;
-    private String password;
-    private String roles;
-    private String introduction;
-    private String avatar;
-    private String name;
-    @WhenCreated
-    private Date   creationDate;
+    private String envCode;
+    private String srcDatabase;
+    private String srcTable;
+    private String dstDatabase;
+    private String dstTable;
+    private String content;
+    private String contentMd5;
 
-    @Transient
-    private String oldPassword;
+    @WhenModified
+    private Date modifiedTime;
 
     public Long getId() {
         return id;
@@ -51,67 +53,67 @@ public class TableStructureMapping extends Model {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
+    public String getEnvCode() {
+        return envCode;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setEnvCode(String envCode) {
+        this.envCode = envCode;
     }
 
-    public String getPassword() {
-        return password;
+    public String getSrcDatabase() {
+        return srcDatabase;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setSrcDatabase(String srcDatabase) {
+        this.srcDatabase = srcDatabase;
     }
 
-    public String getRoles() {
-        return roles;
+    public String getSrcTable() {
+        return srcTable;
     }
 
-    public void setRoles(String roles) {
-        this.roles = roles;
+    public void setSrcTable(String srcTable) {
+        this.srcTable = srcTable;
     }
 
-    public String getIntroduction() {
-        return introduction;
+    public String getDstDatabase() {
+        return dstDatabase;
     }
 
-    public void setIntroduction(String introduction) {
-        this.introduction = introduction;
+    public void setDstDatabase(String dstDatabase) {
+        this.dstDatabase = dstDatabase;
     }
 
-    public String getAvatar() {
-        return avatar;
+    public String getDstTable() {
+        return dstTable;
     }
 
-    public void setAvatar(String avatar) {
-        this.avatar = avatar;
+    public void setDstTable(String dstTable) {
+        this.dstTable = dstTable;
     }
 
-    public String getName() {
-        return name;
+    public String getContent() {
+        return content;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setContent(String content) {
+        this.content = content;
     }
 
-    public Date getCreationDate() {
-        return creationDate;
+    public String getContentMd5() {
+        return contentMd5;
     }
 
-    public void setCreationDate(Date creationDate) {
-        this.creationDate = creationDate;
+    public void setContentMd5(String contentMd5) {
+        this.contentMd5 = contentMd5;
     }
 
-    public String getOldPassword() {
-        return oldPassword;
+    public Date getModifiedTime() {
+        return modifiedTime;
     }
 
-    public void setOldPassword(String oldPassword) {
-        this.oldPassword = oldPassword;
+    public void setModifiedTime(Date modifiedTime) {
+        this.modifiedTime = modifiedTime;
     }
 }
