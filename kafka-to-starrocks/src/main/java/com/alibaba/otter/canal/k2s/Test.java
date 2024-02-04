@@ -1,16 +1,16 @@
-package com.alibaba.otter.canal.kafka.to.starrocks;
+package com.alibaba.otter.canal.k2s;
 
 /**
  * 1
  *
  * @author mujingjing
- * @date 2024/2/1
+ * @date 2024/2/4
  **/
 
 /**
  *
  * @author mujingjing
- * @date 2024/2/1
+ * @date 2024/2/4
  **/
 public class Test {
 }

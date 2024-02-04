@@ -57,6 +57,13 @@ public interface CanalTableMappingService {
 
 
     /**
+     * 根据环境编码查询列表
+     * @return  环境编码列表
+     */
+    List<TableStructureMapping> findByEnv(String envCode);
+
+
+    /**
      * 查询分页列表
      * @param pager 分页参数
      * @return 分页列表
