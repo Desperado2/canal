@@ -24,7 +24,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public void delete(ConsumerTaskConfig consumerTaskConfig) {
-        consumerTaskConfigMonitor.mergeConfig(consumerTaskConfig);
+        consumerTaskConfigMonitor.deleteConfig(consumerTaskConfig);
     }
 
     @Override
@@ -34,7 +34,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public void stop(ConsumerTaskConfig consumerTaskConfig) {
-        consumerTaskConfigMonitor.mergeConfig(consumerTaskConfig);
+        consumerTaskConfigMonitor.deleteConfig(consumerTaskConfig);
     }
 
     @Override

@@ -40,95 +40,50 @@ public class StarRocksSinkManager implements Serializable {
     private StarRocksStreamLoadVisitor starrocksStreamLoadVisitor;
     private final StarRocksSinkOptions sinkOptions;
 
-    public StarRocksSinkManager(StarRocksSinkOptions sinkOptions, TableSchema flinkSchema) {
+    public StarRocksSinkManager(StarRocksSinkOptions sinkOptions, String[] columnList, List<String> dstPkList) {
         this.sinkOptions = sinkOptions;
         StarRocksJdbcConnectionOptions jdbcOptions = new StarRocksJdbcConnectionOptions(sinkOptions.getJdbcUrl(), sinkOptions.getUsername(), sinkOptions.getPassword());
         this.jdbcConnProvider = new StarRocksJdbcConnectionProvider(jdbcOptions);
         this.starrocksQueryVisitor = new StarRocksQueryVisitor(jdbcConnProvider, sinkOptions.getDatabaseName(), sinkOptions.getTableName());
-
-        init(flinkSchema);
+        init(columnList,dstPkList);
     }
 
 
-    protected void init(TableSchema schema) {
-        validateTableStructure(schema);
+    protected void init(String[] columnList, List<String> dstPkList) {
+        validateTableStructure(columnList, dstPkList);
         String version = starrocksQueryVisitor.getStarRocksVersion();
         this.starrocksStreamLoadVisitor = new StarRocksStreamLoadVisitor(
                 sinkOptions,
-                null == schema ? new String[]{} : schema.getFieldNames(),
+                columnList,
                 version.length() > 0 && !version.trim().startsWith("1.")
         );
     }
 
-    private void validateTableStructure(TableSchema flinkSchema) {
-        if (null == flinkSchema) {
-            return;
-        }
-        Optional<UniqueConstraint> constraint = flinkSchema.getPrimaryKey();
+    private void validateTableStructure(String[] columnList, List<String> dstPkList) {
+
         List<Map<String, Object>> rows = starrocksQueryVisitor.getTableColumnsMetaData();
         if (rows == null || rows.isEmpty()) {
             throw new IllegalArgumentException("Couldn't get the sink table's column info.");
         }
         // validate primary keys
         List<String> primayKeys = new ArrayList<>();
-        for (int i = 0; i < rows.size(); i++) {
-            String keysType = rows.get(i).get("COLUMN_KEY").toString();
+        for (Map<String, Object> row : rows) {
+            String keysType = row.get("COLUMN_KEY").toString();
             if (!"PRI".equals(keysType)) {
                 continue;
             }
-            primayKeys.add(rows.get(i).get("COLUMN_NAME").toString().toLowerCase());
+            primayKeys.add(row.get("COLUMN_NAME").toString().toLowerCase());
         }
         if (!primayKeys.isEmpty()) {
-            if (!constraint.isPresent()) {
+            if (dstPkList == null || dstPkList.isEmpty()) {
                 throw new IllegalArgumentException("Primary keys not defined in the sink `TableSchema`.");
             }
-            if (constraint.get().getColumns().size()!=primayKeys.size() ||
-                    !constraint.get().getColumns().stream().allMatch(col -> primayKeys.contains(col.toLowerCase()))) {
+            if (dstPkList.size() != primayKeys.size() ||
+                    !dstPkList.stream().allMatch(col -> primayKeys.contains(col.toLowerCase()))) {
                 throw new IllegalArgumentException("Primary keys of the flink `TableSchema` do not match with the ones from starrocks table.");
             }
             sinkOptions.enableUpsertDelete();
         }
-
-        if (sinkOptions.hasColumnMappingProperty()) {
-            return;
-        }
-        if (flinkSchema.getFieldCount() != rows.size()) {
-            throw new IllegalArgumentException("Fields count of " + this.sinkOptions.getTableName() + " mismatch. \nflinkSchema["
-                    + flinkSchema.getFieldNames().length + "]:"
-                    + Arrays.asList(flinkSchema.getFieldNames()).stream().collect(Collectors.joining(","))
-                    + "\n realTab[" + rows.size() + "]:"
-                    + rows.stream().map((r) -> String.valueOf(r.get("COLUMN_NAME"))).collect(Collectors.joining(",")));
-        }
-        List<TableColumn> flinkCols = flinkSchema.getTableColumns();
-        for (int i = 0; i < rows.size(); i++) {
-            String starrocksField = rows.get(i).get("COLUMN_NAME").toString().toLowerCase();
-            String starrocksType = rows.get(i).get("DATA_TYPE").toString().toLowerCase();
-            List<TableColumn> matchedFlinkCols = flinkCols.stream()
-                    .filter(col -> col.getName().toLowerCase().equals(starrocksField) && (!typesMap.containsKey(starrocksType) || typesMap.get(starrocksType).contains(col.getType().getLogicalType().getTypeRoot())))
-                    .collect(Collectors.toList());
-            if (matchedFlinkCols.isEmpty()) {
-                throw new IllegalArgumentException("Fields name or type mismatch for:" + starrocksField);
-            }
-        }
-    }
-
-    private static final Map<String, List<LogicalTypeRoot>> typesMap = new HashMap<>();
-
-    static {
-        // validate table structure
-        typesMap.put("bigint", Arrays.asList(LogicalTypeRoot.BIGINT, LogicalTypeRoot.INTEGER, LogicalTypeRoot.BINARY));
-        typesMap.put("largeint", Arrays.asList(LogicalTypeRoot.DECIMAL, LogicalTypeRoot.BIGINT, LogicalTypeRoot.INTEGER, LogicalTypeRoot.BINARY));
-        typesMap.put("char", Arrays.asList(LogicalTypeRoot.CHAR, LogicalTypeRoot.VARCHAR));
-        typesMap.put("date", Arrays.asList(LogicalTypeRoot.DATE, LogicalTypeRoot.VARCHAR));
-        typesMap.put("datetime", Arrays.asList(LogicalTypeRoot.TIMESTAMP_WITHOUT_TIME_ZONE, LogicalTypeRoot.TIMESTAMP_WITH_LOCAL_TIME_ZONE, LogicalTypeRoot.VARCHAR));
-        typesMap.put("decimal", Arrays.asList(LogicalTypeRoot.DECIMAL, LogicalTypeRoot.BIGINT, LogicalTypeRoot.INTEGER, LogicalTypeRoot.DOUBLE, LogicalTypeRoot.FLOAT));
-        typesMap.put("double", Arrays.asList(LogicalTypeRoot.DOUBLE, LogicalTypeRoot.BIGINT, LogicalTypeRoot.INTEGER));
-        typesMap.put("float", Arrays.asList(LogicalTypeRoot.FLOAT, LogicalTypeRoot.INTEGER));
-        typesMap.put("int", Arrays.asList(LogicalTypeRoot.INTEGER, LogicalTypeRoot.BINARY));
-        typesMap.put("tinyint", Arrays.asList(LogicalTypeRoot.TINYINT, LogicalTypeRoot.INTEGER, LogicalTypeRoot.BINARY, LogicalTypeRoot.BOOLEAN));
-        typesMap.put("smallint", Arrays.asList(LogicalTypeRoot.SMALLINT, LogicalTypeRoot.INTEGER, LogicalTypeRoot.BINARY));
-        typesMap.put("varchar", Arrays.asList(LogicalTypeRoot.VARCHAR, LogicalTypeRoot.ARRAY, LogicalTypeRoot.MAP, LogicalTypeRoot.ROW));
-        typesMap.put("string", Arrays.asList(LogicalTypeRoot.CHAR, LogicalTypeRoot.VARCHAR, LogicalTypeRoot.ARRAY, LogicalTypeRoot.MAP, LogicalTypeRoot.ROW));
     }
 
     public StarRocksStreamLoadVisitor getStarrocksStreamLoadVisitor() {

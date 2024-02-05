@@ -1,5 +1,8 @@
 package com.alibaba.otter.canal.k2s.kafka.helper;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.stereotype.Component;
@@ -16,11 +19,22 @@ public class KafkaPropertiesHelper {
 
     private Properties kafkaProp;
 
+    private String bootstrapServersConfig;
+
     public synchronized Properties getKafkaProp(String groupId) {
         if(kafkaProp == null){
             initProperties(groupId);
         }
         return kafkaProp;
+    }
+
+    public synchronized AdminClient getAdminClient() {
+        if(StringUtils.isBlank(bootstrapServersConfig)){
+            queryKafkaInfo();
+        }
+        Properties properties = new Properties();
+        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
+        return AdminClient.create(properties);
     }
 
     /**
@@ -29,9 +43,18 @@ public class KafkaPropertiesHelper {
     public void initProperties(String groupId){
         Properties properties = getGlobalConfig();
         // 获取kafka的配置信息
-        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "");
-        properties.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka2");
+        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, queryKafkaInfo());
+        properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         kafkaProp = properties;
+    }
+
+    /**
+     * 初始化properties
+     */
+    public String queryKafkaInfo(){
+        // 获取kafka信息
+        bootstrapServersConfig = "";
+        return "";
     }
 
     /**

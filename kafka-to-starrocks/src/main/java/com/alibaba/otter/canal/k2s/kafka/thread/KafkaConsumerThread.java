@@ -30,12 +30,14 @@ public class KafkaConsumerThread extends Thread{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaConsumerThread.class);
 
-    private KafkaConsumer<String, String> kafkaConsumer;
-    private Consumer<ConsumerRecord<String, String>> consumer;
+    private final String taskId;
+    private final KafkaConsumer<String, String> kafkaConsumer;
+    private final Consumer<ConsumerRecords<String, String>> consumer;
 
-    public KafkaConsumerThread(KafkaConsumer<String, String> kafkaConsumer,Consumer<ConsumerRecord<String, String>> consumer){
+    public KafkaConsumerThread(String taskId, KafkaConsumer<String, String> kafkaConsumer,Consumer<ConsumerRecords<String, String>> consumer){
         this.kafkaConsumer = kafkaConsumer;
         this.consumer = consumer;
+        this.taskId = taskId;
     }
 
     @Override
@@ -47,18 +49,16 @@ public class KafkaConsumerThread extends Thread{
                 }
                 // 拉取kafka消息
                 ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(1000));
-                for (ConsumerRecord<String, String> record : records) {
-                    consumer.accept(record);
-                }
+                consumer.accept(records);
                 // 手动提交ack确认
                 kafkaConsumer.commitSync();
             }
         }catch (InterruptedException e){
             Set<String> subscription = kafkaConsumer.subscription();
-            LOGGER.info("topic:{} 已停止监听，线程停止！", StringUtils.join(subscription, ','),e);
+            LOGGER.info("taskId：{}，topic:{} 已停止监听，线程停止！", taskId,StringUtils.join(subscription, ','),e);
         }catch (Exception e){
             Set<String> subscription = kafkaConsumer.subscription();
-            LOGGER.info("topic:{} 消费者运行异常!", StringUtils.join(subscription, ','),e);
+            LOGGER.info("taskId：{}，topic:{} 消费者运行异常!", taskId, StringUtils.join(subscription, ','),e);
         }finally {
             //关闭消费者
             try {

@@ -5,11 +5,13 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.otter.canal.k2s.config.ConsumerTaskConfig;
 import com.alibaba.otter.canal.k2s.config.KafkaToStarrocksConfig;
-import com.alibaba.otter.canal.k2s.kafka.client.AdminManageClient;
+import com.alibaba.otter.canal.k2s.client.AdminManageClient;
 import com.alibaba.otter.canal.k2s.kafka.consumer.BinlogConsumer;
 import com.alibaba.otter.canal.k2s.kafka.container.ConsumerContainer;
 import com.alibaba.otter.canal.k2s.kafka.helper.KafkaHelper;
 import com.alibaba.otter.canal.k2s.starrocks.config.MappingConfig;
+import com.alibaba.otter.canal.k2s.starrocks.service.StarrocksSyncService;
+import com.alibaba.otter.canal.k2s.starrocks.support.StarrocksTemplate;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.admin.TopicDescription;
@@ -53,50 +55,85 @@ public class ConsumerTaskConfigMonitor {
      * @param consumerTaskConfig 配置信息
      */
     public void mergeConfig(ConsumerTaskConfig consumerTaskConfig){
-        // 1.查询是否已经存在
-        boolean isExists = consumerTaskConfigCache.containsKey(consumerTaskConfig.getTaskId());
         // 校验topic
         boolean checkTopic = checkTopic(consumerTaskConfig);
         if(!checkTopic){
             return;
         }
         // 获取配置
+        String taskId = consumerTaskConfig.getTaskId();
         String mappingEnv = consumerTaskConfig.getMappingEnv();
-        List<MappingConfig> mappingConfigCache = getMappingConfigCache(mappingEnv);
+        List<MappingConfig> mappingConfigCache = getMappingConfigCache(taskId, mappingEnv);
         if(mappingConfigCache == null || mappingConfigCache.isEmpty()){
             return;
         }
-        // 检查通过 创建消费
+        // 1.查询是否已经存在
+        boolean isExists = consumerTaskConfigCache.containsKey(taskId);
+        if(isExists){
+            // 存在  删除原始消费者任务，重启任务
+            // 获取
+            ConsumerTaskConfig consumerTaskConfig1 = consumerTaskConfigCache.get(taskId);
+            for (String topic : consumerTaskConfig1.getTopics()) {
+                LOGGER.info("taskId：{}，停止原来的topic信息", consumerTaskConfig1.getTaskId());
+                kafkaHelper.deleteConsumer(consumerTaskConfig1.getTaskId(), topic);
+            }
+        }
+        // 新增新的消费者
         createConsumer(consumerTaskConfig);
     }
 
+    /**
+     * 删除任务的配置信息
+     * @param consumerTaskConfig 配置信息
+     */
+    public void deleteConfig(ConsumerTaskConfig consumerTaskConfig){
+        // 1.查询是否已经存在
+        boolean isExists = consumerTaskConfigCache.containsKey(consumerTaskConfig.getTaskId());
+        if(isExists){
+            // 存在  删除原始消费者任务，重启任务
+            ConsumerTaskConfig consumerTaskConfig1 = consumerTaskConfigCache.get(consumerTaskConfig.getTaskId());
+            for (String topic : consumerTaskConfig1.getTopics()) {
+                LOGGER.info("taskId：{}，停止原来的topic信息", consumerTaskConfig1.getTaskId());
+                kafkaHelper.deleteConsumer(consumerTaskConfig1.getTaskId(),topic);
+            }
+        }
+        consumerTaskConfigCache.remove(consumerTaskConfig.getTaskId());
+    }
 
-    private boolean createConsumer(ConsumerTaskConfig consumerTaskConfig){
+    /**
+     * 创建消费者
+     * @param consumerTaskConfig 配置
+     */
+    private void createConsumer(ConsumerTaskConfig consumerTaskConfig){
         // 获取map的映射信息
         List<String> topics = consumerTaskConfig.getTopics();
         Map<String, List<Integer>> partitionMap = consumerTaskConfig.getPartitionMap();
         String mappingEnv = consumerTaskConfig.getMappingEnv();
         List<MappingConfig> mappingConfigList = mappingConfigCache.get(mappingEnv);
+        String taskId = consumerTaskConfig.getTaskId();
         for (String topic : topics) {
             List<Integer> partitionList = partitionMap.get(topic);
-            kafkaHelper.addConsumer(topic, partitionList, "", new BinlogConsumer(consumerTaskConfig,mappingConfigList));
+            StarrocksTemplate starrocksTemplate = new StarrocksTemplate(consumerTaskConfig);
+            StarrocksSyncService starrocksSyncService = new StarrocksSyncService(starrocksTemplate);
+            kafkaHelper.addConsumer(taskId,topic, partitionList, consumerTaskConfig.getGroupId(), new BinlogConsumer(starrocksSyncService,mappingConfigList));
+            LOGGER.info("taskId：{}，创建消费者成功，topic:{}, groupId:{}", taskId, topic, consumerTaskConfig.getGroupId());
         }
-        consumerTaskConfigCache.put(consumerTaskConfig.getTaskId(), consumerTaskConfig);
-        return true;
+        consumerTaskConfigCache.put(taskId, consumerTaskConfig);
     }
 
     private boolean checkTopic(ConsumerTaskConfig consumerTaskConfig){
         // 不存在新增
         // 校验数据是否正确
+        String taskId = consumerTaskConfig.getTaskId();
         List<String> topics = consumerTaskConfig.getTopics();
         Map<String, List<Integer>> partitionMap = consumerTaskConfig.getPartitionMap();
         // 1.校验topic是否存在   partition是否存在
-        Map<String, TopicDescription> stringTopicDescriptionMap = kafkaHelper.describeTopicList(topics);
+        Map<String, TopicDescription> stringTopicDescriptionMap = kafkaHelper.describeTopicList(taskId, topics);
         for (String topic : topics) {
             List<Integer> partitions = partitionMap.get(topic);
             // 判断是否存在
             if(stringTopicDescriptionMap.containsKey(topic)){
-                LOGGER.error("topic[{}]不存在，请检查是否配置正确，任务启动失败", topic);
+                LOGGER.error("taskId：{}，topic[{}]不存在，请检查是否配置正确，任务启动失败", taskId, topic);
                 return false;
             }
             // 校验partition
@@ -106,18 +143,18 @@ public class ConsumerTaskConfigMonitor {
             if(!realPartitions.containsAll(partitions)){
                 // 有partition不存在，结束
                 // 查询不正确的partition
-                Object collect = CollectionUtils.subtract(partitions, realPartitions).stream()
+                Object collect = CollectionUtils.subtract(partitions, realPartitions).stream().map(it -> it.toString())
                         .collect(Collectors.joining(","));
-                LOGGER.error("topic[{}]中的partition[{}]不存在，请检查是否配置正确，任务启动失败", topic, collect);
+                LOGGER.error("taskId：{}，topic[{}]中的partition[{}]不存在，请检查是否配置正确，任务启动失败", taskId,topic, collect);
                 return false;
             }
         }
         return true;
     }
 
-    private synchronized List<MappingConfig> getMappingConfigCache(String envCode){
+    private synchronized List<MappingConfig> getMappingConfigCache(String taskId, String envCode){
         if(StringUtils.isBlank(envCode)){
-            LOGGER.error("表结构映射环境参数envCode不能为空， 任务运行失败");
+            LOGGER.error("taskId：{}，表结构映射环境参数envCode不能为空， 任务运行失败", taskId);
             return null;
         }
         if(mappingConfigCache.containsKey(envCode)){
@@ -130,12 +167,12 @@ public class ConsumerTaskConfigMonitor {
                 envCode);
         if(!jsonObject.containsKey("code") || jsonObject.get("code").equals(20000)
                 || !jsonObject.containsKey("data") || jsonObject.get("data") == null){
-            LOGGER.error("获取环境[{}]的表映射配置失败", envCode);
+            LOGGER.error("taskId：{}，获取环境[{}]的表映射配置失败", taskId,envCode);
             return null;
         }
         JSONArray data = jsonObject.getJSONArray("data");
         if(data.size() == 0){
-            LOGGER.error("环境[{}]的表映射配置不存在", envCode);
+            LOGGER.error("taskId：{}，环境[{}]的表映射配置不存在", taskId,envCode);
             return null;
         }
         List<MappingConfig> mappingConfigs = JSONArray.parseArray(JSONArray.toJSONString(data), MappingConfig.class);

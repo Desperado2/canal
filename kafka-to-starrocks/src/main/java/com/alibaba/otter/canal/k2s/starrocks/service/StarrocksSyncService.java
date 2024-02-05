@@ -2,6 +2,7 @@ package com.alibaba.otter.canal.k2s.starrocks.service;
 
 import com.alibaba.otter.canal.k2s.starrocks.config.MappingConfig;
 import com.alibaba.otter.canal.k2s.starrocks.support.Dml;
+import com.alibaba.otter.canal.k2s.starrocks.support.DmlConvertUtil;
 import com.alibaba.otter.canal.k2s.starrocks.support.StarRocksBufferData;
 import com.alibaba.otter.canal.k2s.starrocks.support.StarrocksTemplate;
 import com.alibaba.otter.canal.k2s.utils.PatternUtils;
@@ -15,31 +16,37 @@ import org.springframework.util.CollectionUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
  * StarRocks同步操作业务
  */
-@Service
 public class StarrocksSyncService {
     private static final Logger logger  = LoggerFactory.getLogger(StarrocksSyncService.class);
 
     private final StarrocksTemplate starrocksTemplate;
 
     private final Map<String, MappingConfig> mappingConfigCache = new HashMap<>();
+    private final Map<String, Map<String, String>> columnMappingCache = new HashMap<>();
 
     public StarrocksSyncService(StarrocksTemplate starrocksTemplate) {
         this.starrocksTemplate = starrocksTemplate;
     }
 
+
+    /**
+     * 同步
+     * @param mappingConfig 字段配置
+     * @param dmls 语句
+     */
     public void sync(Map<String, Map<String, MappingConfig>> mappingConfig, List<Dml> dmls) {
         Map<String, StarRocksBufferData> batchData = new HashMap<>();
         for (Dml dml : dmls) {
             if(dml.getIsDdl() != null && dml.getIsDdl() && StringUtils.isNotEmpty(dml.getSql())) {
-                logger.info("This is DDL event data, it will be ignored");
+                logger.debug("This is DDL event data, it will be ignored");
             } else {
                 // DML
                 String database = dml.getDatabase();
@@ -50,11 +57,15 @@ public class StarrocksSyncService {
                 if (configMap == null) {
                   continue;
                 }
+                Map<String, String> columnMappingMap = getColumnMap(key, configMap);
+                if (columnMappingMap == null) {
+                    continue;
+                }
                 StarRocksBufferData rocksBufferData = batchData.computeIfAbsent(key, k -> new StarRocksBufferData());
                 rocksBufferData.setDbName(configMap.getDstDatabase());
                 rocksBufferData.setMappingConfig(configMap);
                 List<byte[]> bufferData = rocksBufferData.getData();
-                List<byte[]> bytesData = genBatchData(dml, configMap);
+                List<byte[]> bytesData = genBatchData(dml, configMap, columnMappingMap);
                 if (CollectionUtils.isEmpty(bufferData)) {
                     bufferData = new ArrayList<>();
                 }
@@ -76,17 +87,25 @@ public class StarrocksSyncService {
         }
     }
 
-    public List<byte[]> genBatchData(Dml dml, MappingConfig config) {
+
+    /**
+     * 生成批量数据
+     * @param dml dml参数
+     * @param config 配置
+     * @param columnMappingMap 字段映射
+     * @return 转换之后的值
+     */
+    public List<byte[]> genBatchData(Dml dml, MappingConfig config, Map<String, String> columnMappingMap) {
         List<byte[]> batchData = new ArrayList<>() ;
         List<Map<String, Object>> data = dml.getData();
         if (data == null || data.size() == 0) {
             return null;
         }
-
         List<String> eventType = config.getMappingData().getNeedType().stream().map(String::toUpperCase).collect(Collectors.toList());
         String type = dml.getType();
         for (Map<String, Object> rowData : data) {
             String jsonData;
+            rowData = DmlConvertUtil.transform(dml.getDatabase(), dml.getTable(), dml.getTs(), rowData, columnMappingMap);
             if ("INSERT".equalsIgnoreCase(type) && eventType.contains("INSERT")) {
                 jsonData = starrocksTemplate.upsert(rowData);
             } else if ("UPDATE".equalsIgnoreCase(type) && eventType.contains("UPDATE")) {
@@ -106,10 +125,8 @@ public class StarrocksSyncService {
                 logger.warn("Unsupport other event data");
                 continue;
             }
-
             batchData.add(jsonData.getBytes(StandardCharsets.UTF_8));
         }
-
         return batchData;
     }
 
@@ -136,4 +153,26 @@ public class StarrocksSyncService {
         }
        return null;
     }
+
+
+    /**
+     * 获取字段映射
+     * @param key key
+     * @param configMap 配置
+     * @return 映射map
+     */
+    private Map<String, String> getColumnMap(String key, MappingConfig configMap){
+        if(columnMappingCache.containsKey(key)){
+            return columnMappingCache.get(key);
+        }
+        // 进行转换
+        List<MappingConfig.MappingData.ColumnMapping> columnMappingList = configMap.getMappingData().getColumnMappingList();
+        Map<String, String> columnMappingMap = new HashMap<>(columnMappingList.size());
+        for (MappingConfig.MappingData.ColumnMapping columnMapping : columnMappingList) {
+            columnMappingMap.put(columnMapping.getSrcField(), columnMapping.getDstField());
+        }
+        columnMappingCache.put(key, columnMappingMap);
+        return columnMappingMap;
+    }
+
 }

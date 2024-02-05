@@ -128,7 +128,7 @@ public class MappingConfig  {
             this.needType = needType;
         }
 
-        private static class ColumnMapping{
+        public static class ColumnMapping{
             private String srcField;
             private String dstField;
 

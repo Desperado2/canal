@@ -5,6 +5,7 @@ import com.alibaba.otter.canal.k2s.kafka.helper.KafkaPropertiesHelper;
 import com.alibaba.otter.canal.k2s.kafka.model.ConsumerInfo;
 import com.alibaba.otter.canal.k2s.kafka.thread.KafkaConsumerThread;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -47,7 +48,8 @@ public class ConsumerContainer {
      * @param partitionList partition列表
      * @param consumer 消费者
      */
-    public synchronized void addConsumer(String topic, List<Integer> partitionList, String groupId, Consumer<ConsumerRecord<String, String>> consumer){
+    public synchronized void addConsumer(String taskId, String topic, List<Integer> partitionList, String groupId,
+                                         Consumer<ConsumerRecords<String, String>> consumer){
         if(kafkaConsumerThreadMap.containsKey(topic)){
             LOGGER.warn("重复创建消费者：{}", topic);
         }
@@ -68,22 +70,22 @@ public class ConsumerContainer {
             stringStringKafkaConsumer.assign(partitions);
         }
         // 创建消费者线程去消费
-        KafkaConsumerThread kafkaConsumerThread = new KafkaConsumerThread(stringStringKafkaConsumer, consumer);
+        KafkaConsumerThread kafkaConsumerThread = new KafkaConsumerThread(taskId, stringStringKafkaConsumer, consumer);
         kafkaConsumerThread.start();
         kafkaConsumerThreadMap.put(topic, kafkaConsumerThread);
-        LOGGER.info("topic[{}]创建消费者成功", topic);
+        LOGGER.info("taskId:{}，topic[{}]创建消费者成功",taskId, topic);
     }
 
-    public synchronized void deleteConsumer(String topic){
+    public synchronized void deleteConsumer(String taskId, String topic){
         KafkaConsumerThread kafkaConsumerThread = kafkaConsumerThreadMap.get(topic);
         if (kafkaConsumerThread == null) {
-            LOGGER.warn("topic[{}]的消费者已经被删除",topic);
+            LOGGER.warn("taskId:{}，topic[{}]的消费者已经被删除",taskId,topic);
             return;
         }
         //打断消费者线程
         kafkaConsumerThread.interrupt();
         kafkaConsumerThreadMap.remove(topic);
-        LOGGER.info("topic[{}]的消费者删除成功",topic);
+        LOGGER.info("taskId:{}，topic[{}]的消费者删除成功",taskId,topic);
     }
 
 

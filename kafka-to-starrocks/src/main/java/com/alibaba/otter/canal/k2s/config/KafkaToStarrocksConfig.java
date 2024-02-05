@@ -13,6 +13,9 @@ import org.springframework.stereotype.Component;
 @Configuration(value = "classpath:application.properties")
 public class KafkaToStarrocksConfig {
 
+    @Value("${server.port}")
+    private Integer serverPort;
+
     @Value("${canal.register.ip}")
     private String canalRegisterIp;
 
@@ -20,7 +23,7 @@ public class KafkaToStarrocksConfig {
     private String canalAdminManagerUrl;
 
     @Value("${canal.admin.port}")
-    private String canalAdminPort;
+    private Integer canalAdminPort;
 
     @Value("${canal.admin.user}")
     private String canalAdminUser;
@@ -36,6 +39,14 @@ public class KafkaToStarrocksConfig {
 
     @Value("${canal.admin.register.name}")
     private String canalAdminRegisterName;
+
+    public Integer getServerPort() {
+        return serverPort;
+    }
+
+    public void setServerPort(Integer serverPort) {
+        this.serverPort = serverPort;
+    }
 
     public String getCanalRegisterIp() {
         return canalRegisterIp;
@@ -53,11 +64,11 @@ public class KafkaToStarrocksConfig {
         this.canalAdminManagerUrl = canalAdminManagerUrl;
     }
 
-    public String getCanalAdminPort() {
+    public Integer getCanalAdminPort() {
         return canalAdminPort;
     }
 
-    public void setCanalAdminPort(String canalAdminPort) {
+    public void setCanalAdminPort(Integer canalAdminPort) {
         this.canalAdminPort = canalAdminPort;
     }
 

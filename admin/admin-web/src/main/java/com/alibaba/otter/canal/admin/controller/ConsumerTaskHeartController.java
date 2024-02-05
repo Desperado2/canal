@@ -1,13 +1,8 @@
 package com.alibaba.otter.canal.admin.controller;
 
 import com.alibaba.otter.canal.admin.model.BaseModel;
-import com.alibaba.otter.canal.admin.model.CanalConfig;
-import com.alibaba.otter.canal.admin.model.CanalInstanceConfig;
 import com.alibaba.otter.canal.admin.model.TableStructureMapping;
-import com.alibaba.otter.canal.admin.model.TaskNodeServer;
 import com.alibaba.otter.canal.admin.service.CanalTableMappingService;
-import com.alibaba.otter.canal.admin.service.PollingConfigService;
-import com.alibaba.otter.canal.admin.service.TaskNodeServerService;
 import com.alibaba.otter.canal.protocol.SecurityUtil;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
@@ -30,8 +25,8 @@ import java.util.List;
  * @version 1.0.0
  */
 @RestController
-@RequestMapping("/api/consumer/{env}/config")
-public class ConsumerTaskPollingConfigController {
+@RequestMapping("/api/consumer/{env}/heartbeat")
+public class ConsumerTaskHeartController {
 
     private static final byte[] seeds = RandomStringUtils.random(16).getBytes();
 
@@ -42,46 +37,21 @@ public class ConsumerTaskPollingConfigController {
     String  passwd;
 
     @Autowired
-    private CanalTableMappingService canalTableMappingService;
-
-    @Autowired
-    private TaskNodeServerService taskNodeServerService;
-
-    @GetMapping(value = "/task_server_polling")
-    public BaseModel<String> canalConfigPoll(@RequestHeader String user, @RequestHeader String passwd,
-                                                  @RequestParam String ip, @RequestParam Integer port,
-                                                  @RequestParam boolean register,
-                                                  @RequestParam String cluster, @RequestParam String name,
-                                                  @PathVariable String env) {
-        if (!auth(user, passwd)) {
-            throw new RuntimeException("auth :" + user + " is failed");
-        }
-        if (register) {
-            taskNodeServerService.autoRegister(ip, port, cluster, StringUtils.trimToNull(name));
-        }
-        return BaseModel.getInstance("success");
-    }
+    CanalTableMappingService canalTableMappingService;
 
     /**
      * 获取mapping的配置
      */
-    @GetMapping(value = "/mapping_polling/{envCode}")
-    public BaseModel<List<TableStructureMapping>> instanceConfigPoll(@RequestHeader String user, @RequestHeader String passwd,
-                                                             @PathVariable String env,
-                                                             @PathVariable String envCode) {
+    @GetMapping(value = "/heartbeat")
+    public BaseModel<String> instanceConfigPoll(@RequestHeader String user, @RequestHeader String passwd,
+                                                                     @RequestParam String ip, @RequestParam Integer port) {
         if (!auth(user, passwd)) {
             throw new RuntimeException("auth :" + user + " is failed");
         }
-        List<TableStructureMapping> tableStructureMappings = canalTableMappingService.findByEnv(envCode);
-        return BaseModel.getInstance(tableStructureMappings);
+        // 保存心跳信息
+        return BaseModel.getInstance("success");
     }
 
-    /**
-     * 认证
-     * @param user 用户名
-     * @param passwd 密码
-     * @return 结果
-     */
     private boolean auth(String user, String passwd) {
         // 如果user/passwd密码为空,则任何用户账户都能登录
         if ((StringUtils.isEmpty(this.user) || StringUtils.equals(this.user, user))) {

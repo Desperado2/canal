@@ -89,6 +89,13 @@ public class CanalTableMappingServiceImpl implements CanalTableMappingService {
     }
 
     @Override
+    public List<TableStructureMapping> findByEnv(String envCode) {
+        return TableStructureMapping.find.query()
+                .where()
+                .eq("envCode", envCode).findList();
+    }
+
+    @Override
     public Pager<TableStructureMapping> findList(Pager<TableStructureMapping> pager) {
         Query<TableStructureMapping> query = TableStructureMapping.find.query();
         int count = query.findCount();
