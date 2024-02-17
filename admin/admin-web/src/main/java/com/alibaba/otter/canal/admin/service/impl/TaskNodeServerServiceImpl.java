@@ -1,7 +1,10 @@
 package com.alibaba.otter.canal.admin.service.impl;
 
 import com.alibaba.otter.canal.admin.client.TaskConsumerClient;
+import com.alibaba.otter.canal.admin.common.Threads;
 import com.alibaba.otter.canal.admin.common.exception.ServiceException;
+import com.alibaba.otter.canal.admin.connector.AdminConnector;
+import com.alibaba.otter.canal.admin.connector.SimpleAdminConnectors;
 import com.alibaba.otter.canal.admin.model.BaseModel;
 import com.alibaba.otter.canal.admin.model.CanalCluster;
 import com.alibaba.otter.canal.admin.model.NodeServer;
@@ -13,8 +16,13 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Service
 public class TaskNodeServerServiceImpl implements TaskNodeServerService {
@@ -96,6 +104,25 @@ public class TaskNodeServerServiceImpl implements TaskNodeServerService {
                 .setFirstRow(pager.getOffset().intValue())
                 .setMaxRows(pager.getSize())
                 .findList();
+
+        List<Future<Boolean>> futures = new ArrayList<>(taskNodeServerList.size());
+        // get all nodes status
+        for (TaskNodeServer ns : taskNodeServerList) {
+            futures.add(Threads.executorService.submit(() -> {
+                BaseModel<String> baseModel = taskConsumerClient.health(ns.getIp() + ":" + ns.getPort());
+                ns.setStatus(baseModel.getCode().equals(20000) ? "1" : "0");
+                return !(baseModel.getCode().equals(20000));
+            }));
+        }
+        for (Future<Boolean> f : futures) {
+            try {
+                f.get(3, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException e) {
+                // ignore
+            } catch (TimeoutException e) {
+                break;
+            }
+        }
         pager.setItems(taskNodeServerList);
         return pager;
     }
@@ -103,7 +130,7 @@ public class TaskNodeServerServiceImpl implements TaskNodeServerService {
     @Override
     public int remoteTaskNodeStatus(String ip, Integer port) {
         BaseModel<String> health = taskConsumerClient.health(ip + ":" + port);
-        return "success".equals(health.getMessage()) ? 1 : 0;
+        return "success".equals(health.getData()) ? 1 : 0;
     }
 
     @Override

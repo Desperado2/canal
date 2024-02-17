@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+
 /**
  * 任务管理控制器
  * @author mujingjing
@@ -23,13 +25,13 @@ public class LogManageController {
 
 
     @GetMapping(value = "/node")
-    public BaseModel<String> nodeLog() {
+    public BaseModel<String> nodeLog() throws IOException {
         return BaseModel.getInstance(logService.readNodeLog());
     }
 
 
     @GetMapping(value = "/task/{taskId}")
-    public BaseModel<String> taskLog(@PathVariable("taskId") String taskId) {
+    public BaseModel<String> taskLog(@PathVariable("taskId") String taskId) throws IOException {
         return BaseModel.getInstance(logService.readTaskLog(taskId));
     }
 }

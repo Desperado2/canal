@@ -42,7 +42,8 @@ public class StarRocksSinkManager implements Serializable {
 
     public StarRocksSinkManager(StarRocksSinkOptions sinkOptions, String[] columnList, List<String> dstPkList) {
         this.sinkOptions = sinkOptions;
-        StarRocksJdbcConnectionOptions jdbcOptions = new StarRocksJdbcConnectionOptions(sinkOptions.getJdbcUrl(), sinkOptions.getUsername(), sinkOptions.getPassword());
+        StarRocksJdbcConnectionOptions jdbcOptions = new StarRocksJdbcConnectionOptions(sinkOptions.getJdbcUrl(),
+                sinkOptions.getUsername(), sinkOptions.getPassword());
         this.jdbcConnProvider = new StarRocksJdbcConnectionProvider(jdbcOptions);
         this.starrocksQueryVisitor = new StarRocksQueryVisitor(jdbcConnProvider, sinkOptions.getDatabaseName(), sinkOptions.getTableName());
         init(columnList,dstPkList);

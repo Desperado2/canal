@@ -94,8 +94,8 @@ public class ConsumerTaskPollingConfigController {
 
             try {
                 // manager这里保存了原始密码，反过来和canal发送过来的进行校验
-                byte[] passForClient = SecurityUtil.scramble411(this.passwd.getBytes(), seeds);
-                return SecurityUtil.scrambleServerAuth(passForClient, SecurityUtil.hexStr2Bytes(passwd), seeds);
+                String pass = SecurityUtil.scrambleGenPass(this.passwd.getBytes());
+                return pass.equals(passwd);
             } catch (NoSuchAlgorithmException e) {
                 return false;
             }

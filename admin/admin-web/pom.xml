@@ -61,6 +61,11 @@
             <artifactId>forest-spring-boot-starter</artifactId>
             <version>1.5.33</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.aventrix.jnanoid</groupId>
+            <artifactId>jnanoid</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

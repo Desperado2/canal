@@ -23,6 +23,11 @@ public class ConsumerTaskConfig {
     private String groupId;
 
     /**
+     * kafka的地址
+     */
+    private String kafkaBootstrap;
+
+    /**
      * 任务的topic列表
      */
     private List<String> topics;
@@ -62,6 +67,12 @@ public class ConsumerTaskConfig {
      */
     private String passWord;
 
+    /**
+     * 消费策略
+     */
+
+    private String offsetReset;
+
     private Boolean isRunning = false;
 
     public String getGroupId() {
@@ -70,6 +81,14 @@ public class ConsumerTaskConfig {
 
     public void setGroupId(String groupId) {
         this.groupId = groupId;
+    }
+
+    public String getKafkaBootstrap() {
+        return kafkaBootstrap;
+    }
+
+    public void setKafkaBootstrap(String kafkaBootstrap) {
+        this.kafkaBootstrap = kafkaBootstrap;
     }
 
     public String getTaskId() {
@@ -150,5 +169,13 @@ public class ConsumerTaskConfig {
 
     public void setRunning(Boolean running) {
         isRunning = running;
+    }
+
+    public String getOffsetReset() {
+        return offsetReset;
+    }
+
+    public void setOffsetReset(String offsetReset) {
+        this.offsetReset = offsetReset;
     }
 }

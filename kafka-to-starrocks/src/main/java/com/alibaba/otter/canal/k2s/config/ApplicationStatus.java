@@ -19,13 +19,13 @@ public class ApplicationStatus {
         return ApplicationStatusHolder.APPLICATION_STATUS;
     }
 
-    private final boolean isRegister = false;
+    private boolean isRegister = false;
 
     public boolean isRegister() {
-        return ApplicationStatusHolder.APPLICATION_STATUS.isRegister;
+        return isRegister;
     }
 
     public synchronized void setRegister(boolean register) {
-        ApplicationStatusHolder.APPLICATION_STATUS.setRegister(register);
+        isRegister = register;
     }
 }

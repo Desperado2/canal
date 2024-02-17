@@ -1,5 +1,6 @@
 package com.alibaba.otter.canal.k2s.kafka.helper;
 
+import com.alibaba.otter.canal.k2s.config.ConsumerTaskConfig;
 import com.alibaba.otter.canal.k2s.kafka.container.ConsumerContainer;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
@@ -35,7 +36,7 @@ public class KafkaHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaHelper.class);
 
-    @Value("${spring.kafka.num.partitions:4}")
+    @Value("${spring.kafka.num.partitions:3}")
     private Integer partitions;
 
     @Value("${spring.kafka.num.replica.fetchers:1}")
@@ -53,10 +54,10 @@ public class KafkaHelper {
      * @param name topic名称
      * @return 是否成功
      */
-    public boolean createTopic(String taskId, String name) {
+    public boolean createTopic(String bootstrap, String taskId, String name) {
         LOGGER.info("taskId:{}，kafka创建topic：{}", taskId, name);
         NewTopic topic = new NewTopic(name, partitions, fetchers);
-        CreateTopicsResult topics = kafkaPropertiesHelper.getAdminClient().createTopics(Collections.singletonList(topic));
+        CreateTopicsResult topics = kafkaPropertiesHelper.getAdminClient(bootstrap).createTopics(Collections.singletonList(topic));
         try {
             topics.all().get();
         } catch (Exception e) {
@@ -71,8 +72,8 @@ public class KafkaHelper {
      *
      * @return topic列表
      */
-    public List<String> list(String taskId) {
-        ListTopicsResult listTopicsResult = kafkaPropertiesHelper.getAdminClient().listTopics();
+    public List<String> list(String bootstrap, String taskId) {
+        ListTopicsResult listTopicsResult = kafkaPropertiesHelper.getAdminClient(bootstrap).listTopics();
         Set<String> names = new HashSet<>();
         try {
             names = listTopicsResult.names().get();
@@ -88,9 +89,9 @@ public class KafkaHelper {
      * @param name topic名称
      * @return 是否成功
      */
-    public boolean deleteTopic(String taskId, String name) {
+    public boolean deleteTopic(String bootstrap, String taskId, String name) {
         LOGGER.info("taskId:{}，kafka删除topic：{}", taskId,name);
-        DeleteTopicsResult deleteTopicsResult = kafkaPropertiesHelper.getAdminClient().deleteTopics(Collections.singletonList(name));
+        DeleteTopicsResult deleteTopicsResult = kafkaPropertiesHelper.getAdminClient(bootstrap).deleteTopics(Collections.singletonList(name));
         try {
             deleteTopicsResult.all().get();
         } catch (Exception e) {
@@ -106,8 +107,8 @@ public class KafkaHelper {
      * @param name topic名称
      * @return 是否成功
      */
-    public TopicDescription describeTopic(String taskId, String name) {
-        DescribeTopicsResult describeTopicsResult = kafkaPropertiesHelper.getAdminClient().describeTopics(Collections.singletonList(name));
+    public TopicDescription describeTopic(String bootstrap, String taskId, String name) {
+        DescribeTopicsResult describeTopicsResult = kafkaPropertiesHelper.getAdminClient(bootstrap).describeTopics(Collections.singletonList(name));
         try {
             Map<String, TopicDescription> stringTopicDescriptionMap = describeTopicsResult.all().get();
             if (stringTopicDescriptionMap.get(name) != null) {
@@ -125,9 +126,9 @@ public class KafkaHelper {
      * @param topicList topic名称列表
      * @return 是否成功
      */
-    public Map<String, TopicDescription> describeTopicList(String taskId, List<String> topicList) {
+    public Map<String, TopicDescription> describeTopicList(String bootstrap, String taskId, List<String> topicList) {
         Map<String, TopicDescription> topicDescriptionMap = new HashMap<>();
-        DescribeTopicsResult describeTopicsResult = kafkaPropertiesHelper.getAdminClient().describeTopics(topicList);
+        DescribeTopicsResult describeTopicsResult = kafkaPropertiesHelper.getAdminClient(bootstrap).describeTopics(topicList);
         try {
             Map<String, TopicDescription> stringTopicDescriptionMap = describeTopicsResult.all().get();
             for (String topic : topicList) {
@@ -147,9 +148,9 @@ public class KafkaHelper {
      * @param topic topic名称
      * @param consumer 消费者
      */
-    public void addConsumer(String taskId, String topic, List<Integer> partitionList, String groupId, Consumer<ConsumerRecords<String, String>> consumer) {
-        LOGGER.info("taskId:{}，将为topic：[{}] 创建消费者, 消费者groupId:[{}]",taskId, topic, groupId);
-        consumerContainer.addConsumer(taskId, topic, partitionList, groupId, consumer);
+    public void addConsumer(String taskId, String topic, List<Integer> partitionList, ConsumerTaskConfig consumerTaskConfig, Consumer<ConsumerRecords<String, String>> consumer) {
+        LOGGER.info("taskId:{}，将为topic：[{}] 创建消费者, 消费者groupId:[{}]",taskId, topic, consumerTaskConfig.getGroupId());
+        consumerContainer.addConsumer(taskId, topic, partitionList, consumerTaskConfig, consumer);
     }
 
     /**

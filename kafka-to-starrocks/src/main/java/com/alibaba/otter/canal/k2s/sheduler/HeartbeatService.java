@@ -5,6 +5,7 @@ import com.alibaba.otter.canal.k2s.client.AdminManageClient;
 import com.alibaba.otter.canal.k2s.config.ApplicationStatus;
 import com.alibaba.otter.canal.k2s.config.KafkaToStarrocksConfig;
 import com.alibaba.otter.canal.k2s.utils.AddressUtils;
+import com.alibaba.otter.canal.k2s.utils.PasswordUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +43,10 @@ public class HeartbeatService {
         }
         JSONObject heartbeat = adminManageClient.heartbeat(kafkaToStarrocksConfig.getCanalAdminManagerUrl(),
                 kafkaToStarrocksConfig.getCanalAdminUser(),
-                kafkaToStarrocksConfig.getCanalAdminPassword(),
+                PasswordUtil.encrypt(kafkaToStarrocksConfig.getCanalAdminPassword()),
                 registerIp,
                 kafkaToStarrocksConfig.getServerPort());
-        if(!heartbeat.getInteger("status").equals(200)){
+        if(!heartbeat.getInteger("code").equals(20000)){
             LOGGER.error("心跳失败，连接不到admin, adminUri:{}",kafkaToStarrocksConfig.getCanalAdminManagerUrl());
         }
     }
@@ -67,14 +68,14 @@ public class HeartbeatService {
         }
         JSONObject heartbeat = adminManageClient.registerTaskNode(kafkaToStarrocksConfig.getCanalAdminManagerUrl(),
                 kafkaToStarrocksConfig.getCanalAdminUser(),
-                kafkaToStarrocksConfig.getCanalAdminPassword(),
+                PasswordUtil.encrypt(kafkaToStarrocksConfig.getCanalAdminPassword()),
                 registerIp,
                 kafkaToStarrocksConfig.getServerPort(),
                 kafkaToStarrocksConfig.getCanalAdminRegisterAuto(),
                 kafkaToStarrocksConfig.getCanalAdminRegisterCluster(),
                 kafkaToStarrocksConfig.getCanalAdminRegisterName()
         );
-        if(!heartbeat.getInteger("status").equals(200)){
+        if(!heartbeat.getInteger("code").equals(20000)){
             LOGGER.error("注册任务节点失败，连接不到admin, adminUri:{}",kafkaToStarrocksConfig.getCanalAdminManagerUrl());
         }else{
             applicationStatus.setRegister(true);

@@ -2,6 +2,8 @@ package com.alibaba.otter.canal.k2s.service;
 
 import com.alibaba.otter.canal.k2s.config.ConsumerTaskConfig;
 
+import java.util.List;
+
 /**
  * 任务服务
  *
@@ -43,4 +45,11 @@ public interface TaskService {
      * @param consumerTaskConfig 任务配置
      */
     void start(ConsumerTaskConfig consumerTaskConfig);
+
+
+    /**
+     * 获取示例列表
+     * @return 示例
+     */
+    List<String> getTaskList();
 }

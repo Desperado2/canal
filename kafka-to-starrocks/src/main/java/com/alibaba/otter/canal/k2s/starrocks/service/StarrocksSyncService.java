@@ -101,7 +101,7 @@ public class StarrocksSyncService {
         if (data == null || data.size() == 0) {
             return null;
         }
-        List<String> eventType = config.getMappingData().getNeedType().stream().map(String::toUpperCase).collect(Collectors.toList());
+        List<String> eventType = config.getContent().getNeedType().stream().map(String::toUpperCase).collect(Collectors.toList());
         String type = dml.getType();
         for (Map<String, Object> rowData : data) {
             String jsonData;
@@ -112,10 +112,10 @@ public class StarrocksSyncService {
                 jsonData = starrocksTemplate.upsert(rowData);
             } else if ("DELETE".equalsIgnoreCase(type) && eventType.contains("DELETE")) {
                 // 查询删除的策略
-                String deleteStrategy = config.getMappingData().getDeleteStrategy();
+                String deleteStrategy = config.getContent().getDeleteStrategy();
                 if ("UPDATE".equalsIgnoreCase(deleteStrategy)){
-                    String deleteUpdateField = config.getMappingData().getDeleteUpdateField();
-                    String deleteUpdateValue = config.getMappingData().getDeleteUpdateValue();
+                    String deleteUpdateField = config.getContent().getDeleteUpdateField();
+                    String deleteUpdateValue = config.getContent().getDeleteUpdateValue();
                     rowData.put(deleteUpdateField, deleteUpdateValue);
                     jsonData = starrocksTemplate.upsert(rowData);
                 }else {
@@ -166,7 +166,7 @@ public class StarrocksSyncService {
             return columnMappingCache.get(key);
         }
         // 进行转换
-        List<MappingConfig.MappingData.ColumnMapping> columnMappingList = configMap.getMappingData().getColumnMappingList();
+        List<MappingConfig.MappingData.ColumnMapping> columnMappingList = configMap.getContent().getColumns();
         Map<String, String> columnMappingMap = new HashMap<>(columnMappingList.size());
         for (MappingConfig.MappingData.ColumnMapping columnMapping : columnMappingList) {
             columnMappingMap.put(columnMapping.getSrcField(), columnMapping.getDstField());

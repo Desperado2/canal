@@ -47,7 +47,7 @@ public interface AdminManageClient {
      * @param name 名称
      * @return 配置信息
      */
-    @Get(value = "http://{basePath}/api/consumer/1/config/task_server_polling/{envCode}", headers = {
+    @Get(value = "http://{basePath}/api/consumer/1/config/task_server_polling", headers = {
             "Accept-Charset: utf-8",
             "Content-Type: application/json"
     })

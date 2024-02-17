@@ -160,6 +160,57 @@ export const constantRoutes = [
       },
     ]
   },
+
+  {
+    path: '/consumerServer',
+    component: Layout,
+    redirect: '/consumerServer/nodeServers',
+    name: 'Consumer Server',
+    meta: { title: 'Consumer Server', icon: 'example' },
+    children: [
+      {
+        path: 'nodeServers',
+        name: 'Server 状态',
+        component: () => import('@/views/consumerServer/NodeServer'),
+        meta: { title: 'Consumer 管理', icon: 'form' }
+      },
+      {
+        path: 'canalInstances',
+        name: 'Instance 管理',
+        component: () => import('@/views/consumerServer/CanalInstance'),
+        meta: { title: 'Instance 管理', icon: 'nested' }
+      },
+      {
+        path: 'canalInstance/add',
+        name: '新建Instance配置',
+        component: () => import('@/views/consumerServer/CanalInstanceAdd'),
+        meta: { title: '新建Instance配置' },
+        hidden: true
+      },
+      {
+        path: 'canalInstance/modify',
+        name: '修改Instance配置',
+        component: () => import('@/views/consumerServer/CanalInstanceUpdate'),
+        meta: { title: '修改Instance配置' },
+        hidden: true
+      },
+      {
+        path: 'nodeServer/log',
+        name: 'Server 日志',
+        component: () => import('@/views/consumerServer/CanalLogDetail'),
+        meta: { title: 'Server 日志' },
+        hidden: true
+      },
+      {
+        path: 'canalInstance/log',
+        name: 'Instance 日志',
+        component: () => import('@/views/consumerServer/CanalInstanceLogDetail'),
+        meta: { title: 'Instance 日志' },
+        hidden: true
+      }
+    ]
+  },
+
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]

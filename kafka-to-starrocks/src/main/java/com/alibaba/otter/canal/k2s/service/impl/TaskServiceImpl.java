@@ -6,6 +6,8 @@ import com.alibaba.otter.canal.k2s.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * 任务服务
  * @author mujingjing
@@ -40,5 +42,10 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public void start(ConsumerTaskConfig consumerTaskConfig) {
         consumerTaskConfigMonitor.mergeConfig(consumerTaskConfig);
+    }
+
+    @Override
+    public List<String> getTaskList() {
+        return consumerTaskConfigMonitor.taskIdList();
     }
 }

@@ -14,7 +14,7 @@ public class MappingConfig  {
     private String srcTable;
     private String dstDatabase;
     private String dstTable;
-    private MappingData mappingData;
+    private MappingData content;
 
     public Long getId() {
         return id;
@@ -64,28 +64,28 @@ public class MappingConfig  {
         this.dstTable = dstTable;
     }
 
-    public MappingData getMappingData() {
-        return mappingData;
+    public MappingData getContent() {
+        return content;
     }
 
-    public void setMappingData(MappingData mappingData) {
-        this.mappingData = mappingData;
+    public void setContent(MappingData content) {
+        this.content = content;
     }
 
     public static class MappingData{
-        private List<ColumnMapping> columnMappingList;
+        private List<ColumnMapping> columns;
         private List<String> dstPkList;
         private String deleteStrategy;
         private String deleteUpdateField;
         private String deleteUpdateValue;
         private List<String> needType;
 
-        public List<ColumnMapping> getColumnMappingList() {
-            return columnMappingList;
+        public List<ColumnMapping> getColumns() {
+            return columns;
         }
 
-        public void setColumnMappingList(List<ColumnMapping> columnMappingList) {
-            this.columnMappingList = columnMappingList;
+        public void setColumns(List<ColumnMapping> columns) {
+            this.columns = columns;
         }
 
         public List<String> getDstPkList() {

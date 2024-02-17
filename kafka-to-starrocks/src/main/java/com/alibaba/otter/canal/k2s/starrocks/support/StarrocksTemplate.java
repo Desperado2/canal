@@ -66,9 +66,9 @@ public class StarrocksTemplate {
         String srDataBase = srMapping.getDstDatabase();
         String srTable = srMapping.getDstTable();
         logger.info("Sync table {}.{}", database, table);
-        List<String> columnList = srMapping.getMappingData().getColumnMappingList().stream()
+        List<String> columnList = srMapping.getContent().getColumns().stream()
                 .map(MappingConfig.MappingData.ColumnMapping::getDstField).collect(Collectors.toList());
-        List<String> dstPkList = srMapping.getMappingData().getDstPkList();
+        List<String> dstPkList = srMapping.getContent().getDstPkList();
         StarRocksSinkOptions op = getStarRocksSinkOptions(srDataBase, srTable, columnList, dstPkList);
 
         StarRocksSinkBufferEntity bufferEntity = new StarRocksSinkBufferEntity(op.getDatabaseName(), op.getTableName(), null);
@@ -90,7 +90,7 @@ public class StarrocksTemplate {
 
     private StarRocksSinkOptions getStarRocksSinkOptions(String srDataBase, String srTable, List<String> columnList, List<String> dstPkList) {
         StarRocksSinkOptions op = StarRocksSinkOptions.builder()
-                .withProperty("jdbc-url", "jdbc:mysql://" + this.consumerTaskConfig.getJdbcUrl())
+                .withProperty("jdbc-url", this.consumerTaskConfig.getJdbcUrl()  + srDataBase  + "?useSSL=false&serverTimezone=GMT")
                 .withProperty("load-url", this.consumerTaskConfig.getFeHost() + ":" + this.consumerTaskConfig.getFeHttpPort())
                 .withProperty("username", this.consumerTaskConfig.getUserName())
                 .withProperty("password",  this.consumerTaskConfig.getPassWord())

@@ -105,6 +105,10 @@ public class WebConfig implements WebMvcConfigurer {
             .excludePathPatterns("/api/**/config/server_polling")
             .excludePathPatterns("/api/**/config/instances_polling")
             .excludePathPatterns("/api/**/config/instance_polling/**")
+            .excludePathPatterns("/api/consumer/**/heartbeat/**")
+            .excludePathPatterns("/api/consumer/**/config/task_server_polling")
+            .excludePathPatterns("/api/consumer/**/config/task_server_polling/**")
+            .excludePathPatterns("/api/consumer/**/config/mapping_polling/**")
             .excludePathPatterns("/api/**/user/login")
             .excludePathPatterns("/api/**/user/logout")
             .excludePathPatterns("/api/**/user/info");

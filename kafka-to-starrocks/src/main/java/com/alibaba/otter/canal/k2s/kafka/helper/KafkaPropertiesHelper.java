@@ -21,41 +21,31 @@ public class KafkaPropertiesHelper {
 
     private String bootstrapServersConfig;
 
-    public synchronized Properties getKafkaProp(String groupId) {
+    public synchronized Properties getKafkaProp(String bootstrap, String groupId, String offsetReset) {
         if(kafkaProp == null){
-            initProperties(groupId);
+            initProperties(bootstrap, groupId,offsetReset);
         }
         return kafkaProp;
     }
 
-    public synchronized AdminClient getAdminClient() {
-        if(StringUtils.isBlank(bootstrapServersConfig)){
-            queryKafkaInfo();
-        }
+    public synchronized AdminClient getAdminClient(String bootstrap) {
         Properties properties = new Properties();
-        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
+        properties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         return AdminClient.create(properties);
     }
 
     /**
      * 初始化properties
      */
-    public void initProperties(String groupId){
+    public void initProperties(String bootstrap, String groupId, String offsetReset){
         Properties properties = getGlobalConfig();
         // 获取kafka的配置信息
-        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, queryKafkaInfo());
+        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
         properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, offsetReset);
         kafkaProp = properties;
     }
 
-    /**
-     * 初始化properties
-     */
-    public String queryKafkaInfo(){
-        // 获取kafka信息
-        bootstrapServersConfig = "";
-        return "";
-    }
 
     /**
      * 设置公共参数

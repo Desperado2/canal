@@ -1,6 +1,7 @@
 package com.alibaba.otter.canal.k2s.kafka.container;
 
 
+import com.alibaba.otter.canal.k2s.config.ConsumerTaskConfig;
 import com.alibaba.otter.canal.k2s.kafka.helper.KafkaPropertiesHelper;
 import com.alibaba.otter.canal.k2s.kafka.model.ConsumerInfo;
 import com.alibaba.otter.canal.k2s.kafka.thread.KafkaConsumerThread;
@@ -48,17 +49,18 @@ public class ConsumerContainer {
      * @param partitionList partition列表
      * @param consumer 消费者
      */
-    public synchronized void addConsumer(String taskId, String topic, List<Integer> partitionList, String groupId,
+    public synchronized void addConsumer(String taskId, String topic, List<Integer> partitionList,
+                                         ConsumerTaskConfig consumerTaskConfig,
                                          Consumer<ConsumerRecords<String, String>> consumer){
         if(kafkaConsumerThreadMap.containsKey(topic)){
             LOGGER.warn("重复创建消费者：{}", topic);
         }
         // 获取参数
-        if(!StringUtils.hasText(groupId)){
+        if(!StringUtils.hasText(consumerTaskConfig.getGroupId())){
             // 生成group_id
-            groupId = "binlog_" + topic + "_" + System.currentTimeMillis();
+            consumerTaskConfig.setGroupId( "binlog_" + topic + "_" + System.currentTimeMillis());
         }
-        Properties kafkaProp = kafkaPropertiesHelper.getKafkaProp(groupId);
+        Properties kafkaProp = kafkaPropertiesHelper.getKafkaProp(consumerTaskConfig.getKafkaBootstrap(),consumerTaskConfig.getGroupId(), consumerTaskConfig.getOffsetReset());
         KafkaConsumer<String, String> stringStringKafkaConsumer = new KafkaConsumer<>(kafkaProp);
         stringStringKafkaConsumer.subscribe(Collections.singletonList(topic));
         // 如果partition不为空，添加

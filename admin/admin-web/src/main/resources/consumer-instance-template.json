@@ -1,0 +1,11 @@
+{
+  "kafkaBootstrap": "127.0.0.1:9092",
+  "topics": ["test"],
+  "mappingEnv": "PROD",
+  "jdbcUrl": "",
+  "feHost": "",
+  "feHttpPort": 8050,
+  "userName": "",
+  "passWord": "",
+  "consumerPolicy": "E-C"
+}

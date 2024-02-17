@@ -12,6 +12,7 @@ import com.alibaba.otter.canal.k2s.kafka.helper.KafkaHelper;
 import com.alibaba.otter.canal.k2s.starrocks.config.MappingConfig;
 import com.alibaba.otter.canal.k2s.starrocks.service.StarrocksSyncService;
 import com.alibaba.otter.canal.k2s.starrocks.support.StarrocksTemplate;
+import com.alibaba.otter.canal.k2s.utils.PasswordUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.admin.TopicDescription;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,10 @@ public class ConsumerTaskConfigMonitor {
     private final Map<String, ConsumerTaskConfig> consumerTaskConfigCache = new HashMap<>();
 
     private final Map<String, List<MappingConfig>> mappingConfigCache = new HashMap<>();
+
+    public List<String> taskIdList(){
+        return new ArrayList<>(consumerTaskConfigCache.keySet());
+    }
 
     /**
      * 合并任务的配置信息
@@ -112,10 +118,14 @@ public class ConsumerTaskConfigMonitor {
         List<MappingConfig> mappingConfigList = mappingConfigCache.get(mappingEnv);
         String taskId = consumerTaskConfig.getTaskId();
         for (String topic : topics) {
-            List<Integer> partitionList = partitionMap.get(topic);
+            List<Integer> partitionList = null;
+            if(partitionMap != null){
+                partitionList = partitionMap.get(topic);
+            }
             StarrocksTemplate starrocksTemplate = new StarrocksTemplate(consumerTaskConfig);
             StarrocksSyncService starrocksSyncService = new StarrocksSyncService(starrocksTemplate);
-            kafkaHelper.addConsumer(taskId,topic, partitionList, consumerTaskConfig.getGroupId(), new BinlogConsumer(starrocksSyncService,mappingConfigList));
+            kafkaHelper.addConsumer(taskId,topic, partitionList, consumerTaskConfig,
+                    new BinlogConsumer(starrocksSyncService,mappingConfigList));
             LOGGER.info("taskId：{}，创建消费者成功，topic:{}, groupId:{}", taskId, topic, consumerTaskConfig.getGroupId());
         }
         consumerTaskConfigCache.put(taskId, consumerTaskConfig);
@@ -127,26 +137,29 @@ public class ConsumerTaskConfigMonitor {
         String taskId = consumerTaskConfig.getTaskId();
         List<String> topics = consumerTaskConfig.getTopics();
         Map<String, List<Integer>> partitionMap = consumerTaskConfig.getPartitionMap();
+        String kafkaBootstrap = consumerTaskConfig.getKafkaBootstrap();
         // 1.校验topic是否存在   partition是否存在
-        Map<String, TopicDescription> stringTopicDescriptionMap = kafkaHelper.describeTopicList(taskId, topics);
+        Map<String, TopicDescription> stringTopicDescriptionMap = kafkaHelper.describeTopicList(kafkaBootstrap,taskId, topics);
         for (String topic : topics) {
-            List<Integer> partitions = partitionMap.get(topic);
             // 判断是否存在
-            if(stringTopicDescriptionMap.containsKey(topic)){
+            if(!stringTopicDescriptionMap.containsKey(topic)){
                 LOGGER.error("taskId：{}，topic[{}]不存在，请检查是否配置正确，任务启动失败", taskId, topic);
                 return false;
             }
-            // 校验partition
-            TopicDescription topicDescription = stringTopicDescriptionMap.get(topic);
-            List<Integer> realPartitions = topicDescription.partitions().stream().map(TopicPartitionInfo::partition)
-                    .collect(Collectors.toList());
-            if(!realPartitions.containsAll(partitions)){
-                // 有partition不存在，结束
-                // 查询不正确的partition
-                Object collect = CollectionUtils.subtract(partitions, realPartitions).stream().map(it -> it.toString())
-                        .collect(Collectors.joining(","));
-                LOGGER.error("taskId：{}，topic[{}]中的partition[{}]不存在，请检查是否配置正确，任务启动失败", taskId,topic, collect);
-                return false;
+            if(partitionMap != null){
+                // 校验partition
+                TopicDescription topicDescription = stringTopicDescriptionMap.get(topic);
+                List<Integer> realPartitions = topicDescription.partitions().stream().map(TopicPartitionInfo::partition)
+                        .collect(Collectors.toList());
+                List<Integer> partitions = partitionMap.get(topic);
+                if(partitions != null && !realPartitions.containsAll(partitions)){
+                    // 有partition不存在，结束
+                    // 查询不正确的partition
+                    Object collect = CollectionUtils.subtract(partitions, realPartitions).stream().map(it -> it.toString())
+                            .collect(Collectors.joining(","));
+                    LOGGER.error("taskId：{}，topic[{}]中的partition[{}]不存在，请检查是否配置正确，任务启动失败", taskId,topic, collect);
+                    return false;
+                }
             }
         }
         return true;
@@ -163,9 +176,9 @@ public class ConsumerTaskConfigMonitor {
         // 查询
         JSONObject jsonObject = adminManageClient.queryMappingByEnv(kafkaToStarrocksConfig.getCanalAdminManagerUrl(),
                 kafkaToStarrocksConfig.getCanalAdminUser(),
-                kafkaToStarrocksConfig.getCanalAdminPassword(),
+                PasswordUtil.encrypt(kafkaToStarrocksConfig.getCanalAdminPassword()),
                 envCode);
-        if(!jsonObject.containsKey("code") || jsonObject.get("code").equals(20000)
+        if(!jsonObject.containsKey("code") || !jsonObject.get("code").equals(20000)
                 || !jsonObject.containsKey("data") || jsonObject.get("data") == null){
             LOGGER.error("taskId：{}，获取环境[{}]的表映射配置失败", taskId,envCode);
             return null;
@@ -174,6 +187,10 @@ public class ConsumerTaskConfigMonitor {
         if(data.size() == 0){
             LOGGER.error("taskId：{}，环境[{}]的表映射配置不存在", taskId,envCode);
             return null;
+        }
+        for (int i = 0; i < data.size(); i++) {
+            String content = data.getJSONObject(i).getString("content");
+            data.getJSONObject(i).put("content", JSONObject.parseObject(content));
         }
         List<MappingConfig> mappingConfigs = JSONArray.parseArray(JSONArray.toJSONString(data), MappingConfig.class);
         mappingConfigCache.put(envCode, mappingConfigs);
