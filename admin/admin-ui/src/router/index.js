@@ -210,7 +210,21 @@ export const constantRoutes = [
       }
     ]
   },
-
+  {
+    path: '/helpArticle',
+    component: Layout,
+    redirect: '/helpArticle/article',
+    name: 'Help Article',
+    meta: { title: 'Help Article', icon: 'example' },
+    children: [
+      {
+        path: 'article',
+        name: '帮助文档',
+        component: () => import('@/views/info/CanalArticle'),
+        meta: { title: '帮助文档', icon: 'tree' }
+      }
+    ]
+  },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]
