@@ -19,12 +19,9 @@ public class KafkaPropertiesHelper {
 
     private Properties kafkaProp;
 
-    private String bootstrapServersConfig;
 
     public synchronized Properties getKafkaProp(String bootstrap, String groupId, String offsetReset) {
-        if(kafkaProp == null){
-            initProperties(bootstrap, groupId,offsetReset);
-        }
+        initProperties(bootstrap, groupId,offsetReset);
         return kafkaProp;
     }
 

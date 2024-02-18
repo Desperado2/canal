@@ -19,6 +19,7 @@ import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.common.TopicPartitionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -80,7 +81,9 @@ public class ConsumerTaskConfigMonitor {
             // 获取
             ConsumerTaskConfig consumerTaskConfig1 = consumerTaskConfigCache.get(taskId);
             for (String topic : consumerTaskConfig1.getTopics()) {
+                MDC.put("taskId", taskId);
                 LOGGER.info("taskId：{}，停止原来的topic信息", consumerTaskConfig1.getTaskId());
+                MDC.remove("taskId");
                 kafkaHelper.deleteConsumer(consumerTaskConfig1.getTaskId(), topic);
             }
         }
@@ -99,7 +102,9 @@ public class ConsumerTaskConfigMonitor {
             // 存在  删除原始消费者任务，重启任务
             ConsumerTaskConfig consumerTaskConfig1 = consumerTaskConfigCache.get(consumerTaskConfig.getTaskId());
             for (String topic : consumerTaskConfig1.getTopics()) {
+                MDC.put("taskId", consumerTaskConfig1.getTaskId());
                 LOGGER.info("taskId：{}，停止原来的topic信息", consumerTaskConfig1.getTaskId());
+                MDC.remove("taskId");
                 kafkaHelper.deleteConsumer(consumerTaskConfig1.getTaskId(),topic);
             }
         }
@@ -126,7 +131,9 @@ public class ConsumerTaskConfigMonitor {
             StarrocksSyncService starrocksSyncService = new StarrocksSyncService(starrocksTemplate);
             kafkaHelper.addConsumer(taskId,topic, partitionList, consumerTaskConfig,
                     new BinlogConsumer(starrocksSyncService,mappingConfigList));
+            MDC.put("taskId", taskId);
             LOGGER.info("taskId：{}，创建消费者成功，topic:{}, groupId:{}", taskId, topic, consumerTaskConfig.getGroupId());
+            MDC.remove("taskId");
         }
         consumerTaskConfigCache.put(taskId, consumerTaskConfig);
     }
@@ -143,7 +150,9 @@ public class ConsumerTaskConfigMonitor {
         for (String topic : topics) {
             // 判断是否存在
             if(!stringTopicDescriptionMap.containsKey(topic)){
+                MDC.put("taskId", taskId);
                 LOGGER.error("taskId：{}，topic[{}]不存在，请检查是否配置正确，任务启动失败", taskId, topic);
+                MDC.remove("taskId");
                 return false;
             }
             if(partitionMap != null){
@@ -157,7 +166,9 @@ public class ConsumerTaskConfigMonitor {
                     // 查询不正确的partition
                     Object collect = CollectionUtils.subtract(partitions, realPartitions).stream().map(it -> it.toString())
                             .collect(Collectors.joining(","));
+                    MDC.put("taskId", taskId);
                     LOGGER.error("taskId：{}，topic[{}]中的partition[{}]不存在，请检查是否配置正确，任务启动失败", taskId,topic, collect);
+                    MDC.remove("taskId");
                     return false;
                 }
             }
@@ -167,11 +178,10 @@ public class ConsumerTaskConfigMonitor {
 
     private synchronized List<MappingConfig> getMappingConfigCache(String taskId, String envCode){
         if(StringUtils.isBlank(envCode)){
+            MDC.put("taskId", taskId);
             LOGGER.error("taskId：{}，表结构映射环境参数envCode不能为空， 任务运行失败", taskId);
+            MDC.remove("taskId");
             return null;
-        }
-        if(mappingConfigCache.containsKey(envCode)){
-            return mappingConfigCache.get(envCode);
         }
         // 查询
         JSONObject jsonObject = adminManageClient.queryMappingByEnv(kafkaToStarrocksConfig.getCanalAdminManagerUrl(),
@@ -180,12 +190,16 @@ public class ConsumerTaskConfigMonitor {
                 envCode);
         if(!jsonObject.containsKey("code") || !jsonObject.get("code").equals(20000)
                 || !jsonObject.containsKey("data") || jsonObject.get("data") == null){
+            MDC.put("taskId", taskId);
             LOGGER.error("taskId：{}，获取环境[{}]的表映射配置失败", taskId,envCode);
+            MDC.remove("taskId");
             return null;
         }
         JSONArray data = jsonObject.getJSONArray("data");
         if(data.size() == 0){
+            MDC.put("taskId", taskId);
             LOGGER.error("taskId：{}，环境[{}]的表映射配置不存在", taskId,envCode);
+            MDC.remove("taskId");
             return null;
         }
         for (int i = 0; i < data.size(); i++) {

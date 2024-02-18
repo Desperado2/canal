@@ -1,5 +1,6 @@
 <configuration scan="true" scanPeriod=" 5 seconds">
 	<jmxConfigurator />
+	<springProperty scope="context" name="LOG_FILE_PATH" source="logging.file.path"/>
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
 			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{56} - %msg%n
@@ -14,11 +15,11 @@
 		</discriminator>
 		<sift>
 			<appender name="FILE-${taskId}" class="ch.qos.logback.core.rolling.RollingFileAppender">
-				<File>../logs/${taskId}/${taskId}.log</File>
+				<File>${LOG_FILE_PATH}/${taskId}/${taskId}.log</File>
 				<rollingPolicy
 						class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 					<!-- rollover daily -->
-					<fileNamePattern>../logs/${taskId}/%d{yyyy-MM-dd}/${taskId}-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+					<fileNamePattern>${LOG_FILE_PATH}/${taskId}/%d{yyyy-MM-dd}/${taskId}-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
 					<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
 						<!-- or whenever the file size reaches 100MB -->
 						<maxFileSize>512MB</maxFileSize>
@@ -41,11 +42,11 @@
 		</discriminator>
 		<sift>
 			<appender name="META-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-				<File>../logs/k2s_meta.log</File>
+				<File>${LOG_FILE_PATH}/k2s_meta.log</File>
 				<rollingPolicy
 						class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 					<!-- rollover daily -->
-					<fileNamePattern>../logs/%d{yyyy-MM-dd}/k2s_meta-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+					<fileNamePattern>${LOG_FILE_PATH}/%d{yyyy-MM-dd}/k2s_meta-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
 					<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
 						<!-- or whenever the file size reaches 100MB -->
 						<maxFileSize>32MB</maxFileSize>

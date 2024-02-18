@@ -11,6 +11,7 @@ import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -55,13 +56,17 @@ public class KafkaHelper {
      * @return 是否成功
      */
     public boolean createTopic(String bootstrap, String taskId, String name) {
+        MDC.put("taskId",taskId);
         LOGGER.info("taskId:{}，kafka创建topic：{}", taskId, name);
+        MDC.remove("taskId");
         NewTopic topic = new NewTopic(name, partitions, fetchers);
         CreateTopicsResult topics = kafkaPropertiesHelper.getAdminClient(bootstrap).createTopics(Collections.singletonList(topic));
         try {
             topics.all().get();
         } catch (Exception e) {
+            MDC.put("taskId",taskId);
             LOGGER.error("taskId:{}，kafka创建topic失败",taskId, e);
+            MDC.remove("taskId");
             return false;
         }
         return true;
@@ -78,7 +83,9 @@ public class KafkaHelper {
         try {
             names = listTopicsResult.names().get();
         } catch (InterruptedException | ExecutionException e) {
+            MDC.put("taskId", taskId);
             LOGGER.error("taskId:{}，kafka获取topic列表失败", taskId, e);
+            MDC.remove("taskId");
         }
         return new ArrayList<>(names);
     }
@@ -90,12 +97,16 @@ public class KafkaHelper {
      * @return 是否成功
      */
     public boolean deleteTopic(String bootstrap, String taskId, String name) {
+        MDC.put("taskId", taskId);
         LOGGER.info("taskId:{}，kafka删除topic：{}", taskId,name);
+        MDC.remove("taskId");
         DeleteTopicsResult deleteTopicsResult = kafkaPropertiesHelper.getAdminClient(bootstrap).deleteTopics(Collections.singletonList(name));
         try {
             deleteTopicsResult.all().get();
         } catch (Exception e) {
+            MDC.put("taskId", taskId);
             LOGGER.error("taskId:{}，kafka删除topic失败",taskId,e);
+            MDC.remove("taskId");
             return false;
         }
         return true;
@@ -115,7 +126,9 @@ public class KafkaHelper {
                 return stringTopicDescriptionMap.get(name);
             }
         } catch (Exception e) {
+            MDC.put("taskId", taskId);
             LOGGER.error("taskId:{}，获取topic详情异常：",taskId, e);
+            MDC.remove("taskId");
         }
         return null;
     }
@@ -137,7 +150,9 @@ public class KafkaHelper {
                 }
             }
         } catch (Exception e) {
+            MDC.put("taskId", taskId);
             LOGGER.error("taskId:{}，获取topic详情异常：", taskId, e);
+            MDC.remove("taskId");
         }
         return topicDescriptionMap;
     }
@@ -149,7 +164,9 @@ public class KafkaHelper {
      * @param consumer 消费者
      */
     public void addConsumer(String taskId, String topic, List<Integer> partitionList, ConsumerTaskConfig consumerTaskConfig, Consumer<ConsumerRecords<String, String>> consumer) {
+        MDC.put("taskId", taskId);
         LOGGER.info("taskId:{}，将为topic：[{}] 创建消费者, 消费者groupId:[{}]",taskId, topic, consumerTaskConfig.getGroupId());
+        MDC.remove("taskId");
         consumerContainer.addConsumer(taskId, topic, partitionList, consumerTaskConfig, consumer);
     }
 
@@ -159,7 +176,9 @@ public class KafkaHelper {
      * @param topic topic名称
      */
     public void deleteConsumer(String taskId,String topic) {
+        MDC.put("taskId", taskId);
         LOGGER.info("taskId:{}，将删除topic：{} 的消费者", taskId,topic);
+        MDC.remove("taskId");
         consumerContainer.deleteConsumer(taskId, topic);
     }
 

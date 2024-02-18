@@ -1,7 +1,9 @@
 package com.alibaba.otter.canal.k2s.service.impl;
 
 import com.alibaba.otter.canal.k2s.service.LogService;
+import com.alibaba.otter.canal.k2s.utils.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -23,41 +25,16 @@ import java.util.stream.Collectors;
 @Service
 public class LogServiceImpl implements LogService {
 
-
-    @Autowired
-    private ResourceLoader resourceLoader;
+    @Value("${logging.file.path:/}")
+    private String logFilePath;
 
     @Override
     public String readNodeLog()  {
-        try {
-            // 加载日志文件资源
-            Resource resource = resourceLoader.getResource("classpath:logs/k2s_meta.log");
-            // 读取日志文件内容
-            String logContent;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
-                logContent = reader.lines().limit(100).collect(Collectors.joining("\n"));
-            }
-            return logContent;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "Failed to read log file.";
-        }
+        return FileUtils.readFileFromOffset(logFilePath + "k2s_meta.log", 100, "UTF-8");
     }
 
     @Override
     public String readTaskLog(String taskId) throws IOException {
-        try {
-            // 加载日志文件资源
-            Resource resource = resourceLoader.getResource(String.format("classpath:logs/%s/%s.log",taskId, taskId));
-            // 读取日志文件内容
-            String logContent;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
-                logContent = reader.lines().limit(100).collect(Collectors.joining("\n"));
-            }
-            return logContent;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "Failed to read log file.";
-        }
+        return FileUtils.readFileFromOffset(logFilePath + taskId + "/" + taskId + ".log", 100, "UTF-8");
     }
 }

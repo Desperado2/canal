@@ -140,6 +140,6 @@ public class TaskNodeServerServiceImpl implements TaskNodeServerService {
             throw new ServiceException("任务节点信息不存在");
         }
         BaseModel<String> baseModel = taskConsumerClient.nodeLog(taskNodeServer.getIp() + ":" + taskNodeServer.getPort());
-        return baseModel.getMessage();
+        return baseModel.getData();
     }
 }

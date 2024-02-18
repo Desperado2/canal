@@ -11,6 +11,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -53,14 +54,18 @@ public class ConsumerContainer {
                                          ConsumerTaskConfig consumerTaskConfig,
                                          Consumer<ConsumerRecords<String, String>> consumer){
         if(kafkaConsumerThreadMap.containsKey(topic)){
+            MDC.put("taskId", taskId);
             LOGGER.warn("重复创建消费者：{}", topic);
+            MDC.remove("taskId");
         }
         // 获取参数
         if(!StringUtils.hasText(consumerTaskConfig.getGroupId())){
             // 生成group_id
             consumerTaskConfig.setGroupId( "binlog_" + topic + "_" + System.currentTimeMillis());
         }
-        Properties kafkaProp = kafkaPropertiesHelper.getKafkaProp(consumerTaskConfig.getKafkaBootstrap(),consumerTaskConfig.getGroupId(), consumerTaskConfig.getOffsetReset());
+        Properties kafkaProp = kafkaPropertiesHelper.getKafkaProp(consumerTaskConfig.getKafkaBootstrap(),
+                consumerTaskConfig.getGroupId(),
+                consumerTaskConfig.getOffsetReset());
         KafkaConsumer<String, String> stringStringKafkaConsumer = new KafkaConsumer<>(kafkaProp);
         stringStringKafkaConsumer.subscribe(Collections.singletonList(topic));
         // 如果partition不为空，添加
@@ -75,19 +80,25 @@ public class ConsumerContainer {
         KafkaConsumerThread kafkaConsumerThread = new KafkaConsumerThread(taskId, stringStringKafkaConsumer, consumer);
         kafkaConsumerThread.start();
         kafkaConsumerThreadMap.put(topic, kafkaConsumerThread);
+        MDC.put("taskId", taskId);
         LOGGER.info("taskId:{}，topic[{}]创建消费者成功",taskId, topic);
+        MDC.remove("taskId");
     }
 
     public synchronized void deleteConsumer(String taskId, String topic){
         KafkaConsumerThread kafkaConsumerThread = kafkaConsumerThreadMap.get(topic);
         if (kafkaConsumerThread == null) {
+            MDC.put("taskId", taskId);
             LOGGER.warn("taskId:{}，topic[{}]的消费者已经被删除",taskId,topic);
+            MDC.remove("taskId");
             return;
         }
         //打断消费者线程
         kafkaConsumerThread.interrupt();
         kafkaConsumerThreadMap.remove(topic);
+        MDC.put("taskId", taskId);
         LOGGER.info("taskId:{}，topic[{}]的消费者删除成功",taskId,topic);
+        MDC.remove("taskId");
     }
 
 

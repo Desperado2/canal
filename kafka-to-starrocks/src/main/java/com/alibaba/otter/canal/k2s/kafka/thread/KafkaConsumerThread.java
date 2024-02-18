@@ -12,6 +12,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.tomcat.util.buf.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -55,10 +56,14 @@ public class KafkaConsumerThread extends Thread{
             }
         }catch (InterruptedException e){
             Set<String> subscription = kafkaConsumer.subscription();
+            MDC.put("taskId", taskId);
             LOGGER.info("taskId：{}，topic:{} 已停止监听，线程停止！", taskId,StringUtils.join(subscription, ','),e);
+            MDC.remove("taskId");
         }catch (Exception e){
             Set<String> subscription = kafkaConsumer.subscription();
+            MDC.put("taskId", taskId);
             LOGGER.info("taskId：{}，topic:{} 消费者运行异常!", taskId, StringUtils.join(subscription, ','),e);
+            MDC.remove("taskId");
         }finally {
             //关闭消费者
             try {
