@@ -157,7 +157,7 @@ export const constantRoutes = [
         component: () => import('@/views/tableMapping/TableMappingConfig'),
         meta: { title: '映射配置' },
         hidden: true
-      },
+      }
     ]
   },
 

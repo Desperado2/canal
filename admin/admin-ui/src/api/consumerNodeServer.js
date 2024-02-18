@@ -38,8 +38,6 @@ export function deleteNodeServer(id) {
   })
 }
 
-
-
 export function nodeServerLog(id) {
   return request({
     url: '/taskNodeServer/log/' + id,
