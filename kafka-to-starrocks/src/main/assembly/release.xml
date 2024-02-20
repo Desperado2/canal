@@ -1,11 +1,12 @@
-<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
-	<id>dist</id>
-	<formats>
-		<format>dir</format>
-	</formats>
-	<includeBaseDirectory>false</includeBaseDirectory>
-	<fileSets>
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+    <id>dist</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <fileSets>
         <fileSet>
             <directory>.</directory>
             <outputDirectory>/</outputDirectory>
@@ -25,19 +26,9 @@
             <directory>./src/main/resources</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
-                <include>application.yml</include>
-                <include>logback.xml</include>
-                <include>canal_manager.sql</include>
-                <include>canal-template.properties</include>
-                <include>instance-template.properties</include>
-                <include>consumer-instance-template.json</include>
-                <include>consumer-task-template.json</include>
-                <include>table-mapping-template.json</include>
+                <include>application.properties</include>
+                <include>logback-spring.xml</include>
             </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/../admin-ui/dist</directory>
-            <outputDirectory>./conf/public</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>target</directory>

@@ -25,19 +25,9 @@
             <directory>./src/main/resources</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
-                <include>application.yml</include>
-                <include>logback.xml</include>
-                <include>canal_manager.sql</include>
-                <include>canal-template.properties</include>
-                <include>instance-template.properties</include>
-                <include>consumer-instance-template.json</include>
-                <include>consumer-task-template.json</include>
-                <include>table-mapping-template.json</include>
+                <include>application.properties</include>
+                <include>logback-spring.xml</include>
             </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/../admin-ui/dist</directory>
-            <outputDirectory>./conf/public</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>target</directory>

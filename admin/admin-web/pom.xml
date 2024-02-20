@@ -16,6 +16,11 @@
 			<optional>true</optional>
 		</dependency>
         <dependency>
+            <groupId>com.alibaba.otter</groupId>
+            <artifactId>canal.admin-ui</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>

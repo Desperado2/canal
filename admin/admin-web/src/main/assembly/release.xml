@@ -28,11 +28,17 @@
             <includes>
                 <include>application.yml</include>
                 <include>logback.xml</include>
-                <include>public/**</include>
                 <include>canal_manager.sql</include>
                 <include>canal-template.properties</include>
                 <include>instance-template.properties</include>
+                <include>consumer-instance-template.json</include>
+                <include>consumer-task-template.json</include>
+                <include>table-mapping-template.json</include>
             </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${basedir}/../admin-ui/dist</directory>
+            <outputDirectory>./conf/public</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>target</directory>

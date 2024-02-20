@@ -13,16 +13,15 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
-    <frontend-maven-plugin.version>1.6</frontend-maven-plugin.version>
+    <frontend-maven-plugin.version>1.12.1</frontend-maven-plugin.version>
   </properties>
-
   <profiles>
     <profile>
-      <id>npm</id>
+      <id>release</id>
       <activation>
         <property>
           <name>env</name>
-          <value>npm</value>
+          <value>release</value>
         </property>
       </activation>
       <build>
@@ -38,8 +37,9 @@
                   <goal>install-node-and-npm</goal>
                 </goals>
                 <configuration>
-                  <nodeVersion>v9.11.1</nodeVersion>
-                </configuration>
+                  <nodeVersion>v12.14.0</nodeVersion>
+                  <npmVersion>6.13.4</npmVersion>
+               </configuration>
               </execution>
               <!-- Install all project dependencies -->
               <execution>
@@ -56,12 +56,12 @@
               </execution>
               <!-- Build and minify static files -->
               <execution>
-                <id>npm run build</id>
+                <id>npm run build:prod</id>
                 <goals>
                   <goal>npm</goal>
                 </goals>
                 <configuration>
-                  <arguments>run build</arguments>
+                  <arguments>run build:prod</arguments>
                 </configuration>
               </execution>
             </executions>
