@@ -1,12 +1,3 @@
-[![build status](https://travis-ci.com/alibaba/canal.svg?branch=master)](https://travis-ci.com/alibaba/canal)
-[![codecov](https://codecov.io/gh/alibaba/canal/branch/master/graph/badge.svg)](https://codecov.io/gh/alibaba/canal)
-![maven](https://img.shields.io/maven-central/v/com.alibaba.otter/canal.svg)
-![license](https://img.shields.io/github/license/alibaba/canal.svg)
-[![average time to resolve an issue](http://isitmaintained.com/badge/resolution/alibaba/canal.svg)](http://isitmaintained.com/project/alibaba/canal "average time to resolve an issue")
-[![percentage of issues still open](http://isitmaintained.com/badge/open/alibaba/canal.svg)](http://isitmaintained.com/project/alibaba/canal "percentage of issues still open")
-[![Leaderboard](https://img.shields.io/badge/Canal-%E6%9F%A5%E7%9C%8B%E8%B4%A1%E7%8C%AE%E6%8E%92%E8%A1%8C%E6%A6%9C-orange)](https://opensource.alibaba.com/contribution_leaderboard/details?projectValue=canal)
-
-
 ## 简介
 
 ![](https://img-blog.csdnimg.cn/20191104101735947.png)
@@ -39,73 +30,39 @@
 - MySQL master 收到 dump 请求，开始推送 binary log 给 slave (即 canal )
 - canal 解析 binary log 对象(原始为 byte 流)
 
-## 重要版本更新说明
-
-1. canal 1.1.x 版本（[release_note](https://github.com/alibaba/canal/releases)）,性能与功能层面有较大的突破,重要提升包括:
-
-- 整体性能测试&优化,提升了150%. #726 参考: [Performance](https://github.com/alibaba/canal/wiki/Performance)
-- 原生支持prometheus监控 #765 [Prometheus QuickStart](https://github.com/alibaba/canal/wiki/Prometheus-QuickStart)
-- 原生支持kafka消息投递 #695 [Canal Kafka/RocketMQ QuickStart](https://github.com/alibaba/canal/wiki/Canal-Kafka-RocketMQ-QuickStart)
-- 原生支持aliyun rds的binlog订阅 (解决自动主备切换/oss binlog离线解析) 参考: [Aliyun RDS QuickStart](https://github.com/alibaba/canal/wiki/aliyun-RDS-QuickStart)
-- 原生支持docker镜像 #801 参考: [Docker QuickStart](https://github.com/alibaba/canal/wiki/Docker-QuickStart)
-
-2.  canal 1.1.4版本，迎来最重要的WebUI能力，引入canal-admin工程，支持面向WebUI的canal动态管理能力，支持配置、任务、日志等在线白屏运维能力，具体文档：[Canal Admin Guide](https://github.com/alibaba/canal/wiki/Canal-Admin-Guide)
-
 ## 文档
 
-- [Home](https://github.com/alibaba/canal/wiki/Home)
-- [Introduction](https://github.com/alibaba/canal/wiki/Introduction)
-- [QuickStart](https://github.com/alibaba/canal/wiki/QuickStart)
-  - [Docker QuickStart](https://github.com/alibaba/canal/wiki/Docker-QuickStart)
-  - [Canal Kafka/RocketMQ QuickStart](https://github.com/alibaba/canal/wiki/Canal-Kafka-RocketMQ-QuickStart")
-  - [Aliyun RDS for MySQL QuickStart](https://github.com/alibaba/canal/wiki/aliyun-RDS-QuickStart)
-  - [Prometheus QuickStart](https://github.com/alibaba/canal/wiki/Prometheus-QuickStart)
+- [Home](wiki/Home.md)
+- [Introduction](wiki/Introduction.md)
+- [QuickStart](wiki/QuickStart.md)
+  - [Docker QuickStart](wiki/Docker-QuickStart.md)
+  - [Canal Kafka/RocketMQ QuickStart](wiki/Canal-Kafka-RocketMQ-QuickStart.md)
+  - [Aliyun RDS for MySQL QuickStart](wiki/aliyun-RDS-QuickStart.md)
+  - [Prometheus QuickStart](wiki/Prometheus-QuickStart.md)
 - Canal Admin
-  - [Canal Admin QuickStart](https://github.com/alibaba/canal/wiki/Canal-Admin-QuickStart)
-  - [Canal Admin Guide](https://github.com/alibaba/canal/wiki/Canal-Admin-Guide)
-  - [Canal Admin ServerGuide](https://github.com/alibaba/canal/wiki/Canal-Admin-ServerGuide)
-  - [Canal Admin Docker](https://github.com/alibaba/canal/wiki/Canal-Admin-Docker)
-- [AdminGuide](https://github.com/alibaba/canal/wiki/AdminGuide)
-- [ClientExample](https://github.com/alibaba/canal/wiki/ClientExample)
-- [ClientAPI](https://github.com/alibaba/canal/wiki/ClientAPI)
-- [Performance](https://github.com/alibaba/canal/wiki/Performance)
-- [DevGuide](https://github.com/alibaba/canal/wiki/DevGuide)
-- [BinlogChange(MySQL 5.6)](https://github.com/alibaba/canal/wiki/BinlogChange%28mysql5.6%29)
-- [BinlogChange(MariaDB)](https://github.com/alibaba/canal/wiki/BinlogChange%28MariaDB%29)
-- [TableMetaTSDB](https://github.com/alibaba/canal/wiki/TableMetaTSDB)
-- [ReleaseNotes](http://alibaba.github.com/canal/release.html)
-- [Download](https://github.com/alibaba/canal/releases)
-- [FAQ](https://github.com/alibaba/canal/wiki/FAQ)
+  - [Canal Admin QuickStart](wiki/Canal-Admin-QuickStart.md)
+  - [Canal Admin Guide](wiki/Canal-Admin-Guide.md)
+  - [Canal Admin ServerGuide](wiki/Canal-Admin-ServerGuide.md)
+  - [Canal Admin Docker](wiki/Canal-Admin-Docker.md)
+- [AdminGuide](wiki/AdminGuide.md)
+- [ClientExample](wiki/ClientExample.md)
+- [ClientAPI](wiki/ClientAPI.md)
+- [Performance](wiki/Performance.md)
+- [DevGuide](wiki/DevGuide.md)
+- [BinlogChange(MySQL 5.6)](wiki/BinlogChange%28mysql5.6%29.md)
+- [BinlogChange(MariaDB)](wiki/BinlogChange%28MariaDB%29.md)
+- [TableMetaTSDB](wiki/TableMetaTSDB.md)
+- [FAQ](wiki/FAQ.md)
 
-## 多语言
+## 自我构建
+```text
+mvn clean install -Denv=release
+```
+#### 构建生成文件说明
+构建完成之后，文件在项目根目录中的target/目录下面，生成的文件说明如下：
+canal.admin-1.1.8-SNAPSHOT.tar.gz   admin管理端  
+canal.deployer-1.1.8-SNAPSHOT.tar.gz    canal数据服务  
+canal.adapter-1.1.8-SNAPSHOT.tar.gz     canal数据同步服务  
+canal.example-1.1.8-SNAPSHOT.tar.gz     canal示例  
+canal.kafka-to-starrocks-1.1.8-SNAPSHOT.tar.gz  kafka同步数据到StarRcoks服务
 
-canal 特别设计了 client-server 模式，交互协议使用 protobuf 3.0 , client 端可采用不同语言实现不同的消费逻辑，欢迎大家提交 pull request 
-  
-- canal java 客户端: [https://github.com/alibaba/canal/wiki/ClientExample](https://github.com/alibaba/canal/wiki/ClientExample)
-- canal c# 客户端: [https://github.com/dotnetcore/CanalSharp](https://github.com/dotnetcore/CanalSharp)
-- canal go客户端: [https://github.com/CanalClient/canal-go](https://github.com/CanalClient/canal-go)
-- canal php客户端: [https://github.com/xingwenge/canal-php](https://github.com/xingwenge/canal-php)
-- canal Python客户端：[https://github.com/haozi3156666/canal-python](https://github.com/haozi3156666/canal-python)
-- canal Rust客户端：[https://github.com/laohanlinux/canal-rs](https://github.com/laohanlinux/canal-rs)
-- canal Nodejs客户端：[https://github.com/marmot-z/canal-nodejs](https://github.com/marmot-z/canal-nodejs)
-
-canal 作为 MySQL binlog 增量获取和解析工具，可将变更记录投递到 MQ 系统中，比如 Kafka/RocketMQ，可以借助于 MQ 的多语言能力 
-
-- 参考文档: [Canal Kafka/RocketMQ QuickStart](https://github.com/alibaba/canal/wiki/Canal-Kafka-RocketMQ-QuickStart)
-
-## 基于canal开发的工具
-
--  canal2sql(基于binlog生成SQL) : [https://github.com/zhuchao941/canal2sql]
-
-## 相关开源&产品
-
-- [canal 消费端开源项目: Otter](http://github.com/alibaba/otter)
-- [阿里巴巴去 Oracle 数据迁移同步工具: yugong](http://github.com/alibaba/yugong)
-- [阿里巴巴离线同步开源项目 DataX](https://github.com/alibaba/datax)
-- [阿里巴巴数据库连接池开源项目 Druid](https://github.com/alibaba/druid)
-- [阿里巴巴实时数据同步工具 DTS](https://www.aliyun.com/product/dts)
-
-## 问题反馈
-- 报告 issue: [github issues](https://github.com/alibaba/canal/issues)
-
-本项目的Issues会被同步沉淀至[阿里云开发者社区](https://developer.aliyun.com/ask)
