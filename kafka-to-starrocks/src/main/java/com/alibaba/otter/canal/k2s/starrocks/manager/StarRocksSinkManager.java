@@ -17,10 +17,15 @@ package com.alibaba.otter.canal.k2s.starrocks.manager;
 import com.alibaba.otter.canal.k2s.starrocks.connection.StarRocksJdbcConnectionOptions;
 import com.alibaba.otter.canal.k2s.starrocks.connection.StarRocksJdbcConnectionProvider;
 import com.alibaba.otter.canal.k2s.starrocks.sink.StarRocksSinkOptions;
+import com.alibaba.otter.canal.k2s.starrocks.support.ConvertUtil;
+import com.alibaba.otter.canal.k2s.starrocks.support.StarrocksTemplate;
 import org.apache.flink.table.api.TableColumn;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.api.constraints.UniqueConstraint;
 import org.apache.flink.table.types.logical.LogicalTypeRoot;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -32,7 +37,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class StarRocksSinkManager implements Serializable {
-
+    private static final Logger logger  = LoggerFactory.getLogger(StarRocksSinkManager.class);
     private static final long serialVersionUID = 1L;
 
     private final StarRocksJdbcConnectionProvider jdbcConnProvider;
@@ -40,19 +45,19 @@ public class StarRocksSinkManager implements Serializable {
     private StarRocksStreamLoadVisitor starrocksStreamLoadVisitor;
     private final StarRocksSinkOptions sinkOptions;
 
-    public StarRocksSinkManager(StarRocksSinkOptions sinkOptions, String[] columnList, List<String> dstPkList) {
+    public StarRocksSinkManager(String taskId, StarRocksSinkOptions sinkOptions, String[] columnList, List<String> dstPkList) {
         this.sinkOptions = sinkOptions;
         StarRocksJdbcConnectionOptions jdbcOptions = new StarRocksJdbcConnectionOptions(sinkOptions.getJdbcUrl(),
                 sinkOptions.getUsername(), sinkOptions.getPassword());
         this.jdbcConnProvider = new StarRocksJdbcConnectionProvider(jdbcOptions);
         this.starrocksQueryVisitor = new StarRocksQueryVisitor(jdbcConnProvider, sinkOptions.getDatabaseName(), sinkOptions.getTableName());
-        init(columnList,dstPkList);
+        init(taskId, columnList,dstPkList);
     }
 
 
-    protected void init(String[] columnList, List<String> dstPkList) {
-        validateTableStructure(columnList, dstPkList);
-        String version = starrocksQueryVisitor.getStarRocksVersion();
+    protected void init(String taskId, String[] columnList, List<String> dstPkList) {
+        validateTableStructure(taskId, columnList, dstPkList);
+        String version = starrocksQueryVisitor.getStarRocksVersion(taskId);
         this.starrocksStreamLoadVisitor = new StarRocksStreamLoadVisitor(
                 sinkOptions,
                 columnList,
@@ -60,10 +65,13 @@ public class StarRocksSinkManager implements Serializable {
         );
     }
 
-    private void validateTableStructure(String[] columnList, List<String> dstPkList) {
+    private void validateTableStructure(String taskId, String[] columnList, List<String> dstPkList) {
 
-        List<Map<String, Object>> rows = starrocksQueryVisitor.getTableColumnsMetaData();
+        List<Map<String, Object>> rows = starrocksQueryVisitor.getTableColumnsMetaData(taskId);
         if (rows == null || rows.isEmpty()) {
+            MDC.put("taskId", taskId);
+            logger.error("taskId:{}, Couldn't get the sink table's column info.",taskId);
+            MDC.remove("taskId");
             throw new IllegalArgumentException("Couldn't get the sink table's column info.");
         }
         // validate primary keys
@@ -77,10 +85,16 @@ public class StarRocksSinkManager implements Serializable {
         }
         if (!primayKeys.isEmpty()) {
             if (dstPkList == null || dstPkList.isEmpty()) {
+                MDC.put("taskId", taskId);
+                logger.error("taskId:{}, Primary keys not defined in the sink `TableSchema`.",taskId);
+                MDC.remove("taskId");
                 throw new IllegalArgumentException("Primary keys not defined in the sink `TableSchema`.");
             }
             if (dstPkList.size() != primayKeys.size() ||
                     !dstPkList.stream().allMatch(col -> primayKeys.contains(col.toLowerCase()))) {
+                MDC.put("taskId", taskId);
+                logger.error("taskId:{}, Primary keys of the  `TableSchema` do not match with the ones from starrocks table.",taskId);
+                MDC.remove("taskId");
                 throw new IllegalArgumentException("Primary keys of the flink `TableSchema` do not match with the ones from starrocks table.");
             }
             sinkOptions.enableUpsertDelete();

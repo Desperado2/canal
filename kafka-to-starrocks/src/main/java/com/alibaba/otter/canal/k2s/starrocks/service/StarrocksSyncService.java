@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.oro.text.regex.Perl5Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -42,11 +43,13 @@ public class StarrocksSyncService {
      * @param mappingConfig 字段配置
      * @param dmls 语句
      */
-    public void sync(Map<String, Map<String, MappingConfig>> mappingConfig, List<Dml> dmls) {
+    public void sync(String taskId, Map<String, Map<String, MappingConfig>> mappingConfig, List<Dml> dmls) {
         Map<String, StarRocksBufferData> batchData = new HashMap<>();
         for (Dml dml : dmls) {
             if(dml.getIsDdl() != null && dml.getIsDdl() && StringUtils.isNotEmpty(dml.getSql())) {
-                logger.debug("This is DDL event data, it will be ignored");
+                MDC.put("taskId", taskId);
+                logger.debug("taskId:{},This is DDL event data, it will be ignored",taskId);
+                MDC.remove("taskId");
             } else {
                 // DML
                 String database = dml.getDatabase();
@@ -61,11 +64,15 @@ public class StarrocksSyncService {
                 if (columnMappingMap == null) {
                     continue;
                 }
-                StarRocksBufferData rocksBufferData = batchData.computeIfAbsent(key, k -> new StarRocksBufferData());
-                rocksBufferData.setDbName(configMap.getDstDatabase());
+                // 生成新的key。使用目标表，减少数量
+                String dstDatabase = configMap.getDstDatabase();
+                String dstTable = configMap.getDstTable();
+                String dstKey = dstDatabase + "-" + dstTable;
+                StarRocksBufferData rocksBufferData = batchData.computeIfAbsent(dstKey, k -> new StarRocksBufferData());
+                rocksBufferData.setDbName(dstDatabase);
                 rocksBufferData.setMappingConfig(configMap);
                 List<byte[]> bufferData = rocksBufferData.getData();
-                List<byte[]> bytesData = genBatchData(dml, configMap, columnMappingMap);
+                List<byte[]> bytesData = genBatchData(taskId, dml, configMap, columnMappingMap);
                 if (CollectionUtils.isEmpty(bufferData)) {
                     bufferData = new ArrayList<>();
                 }
@@ -73,7 +80,7 @@ public class StarrocksSyncService {
                 rocksBufferData.setData(bufferData);
             }
         }
-        sync(batchData);
+        sync(taskId,batchData);
     }
 
 
@@ -81,9 +88,9 @@ public class StarrocksSyncService {
      * 批量同步
      * @param batchData 批量数据
      */
-    private void sync(Map<String, StarRocksBufferData> batchData) {
+    private void sync(String taskId,Map<String, StarRocksBufferData> batchData) {
         for (Map.Entry<String, StarRocksBufferData> bufferDataEntry : batchData.entrySet()) {
-            starrocksTemplate.sink(bufferDataEntry.getValue());
+            starrocksTemplate.sink(taskId, bufferDataEntry.getValue());
         }
     }
 
@@ -95,7 +102,7 @@ public class StarrocksSyncService {
      * @param columnMappingMap 字段映射
      * @return 转换之后的值
      */
-    public List<byte[]> genBatchData(Dml dml, MappingConfig config, Map<String, String> columnMappingMap) {
+    public List<byte[]> genBatchData(String taskId, Dml dml, MappingConfig config, Map<String, String> columnMappingMap) {
         List<byte[]> batchData = new ArrayList<>() ;
         List<Map<String, Object>> data = dml.getData();
         if (data == null || data.size() == 0) {
@@ -122,7 +129,9 @@ public class StarrocksSyncService {
                     jsonData = starrocksTemplate.delete(rowData);
                 }
             } else {
-                logger.warn("Unsupport other event data");
+                MDC.put("taskId", taskId);
+                logger.warn("taskId：{}， Unsupport other event data",taskId);
+                MDC.remove("taskId");
                 continue;
             }
             batchData.add(jsonData.getBytes(StandardCharsets.UTF_8));

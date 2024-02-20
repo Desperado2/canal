@@ -29,7 +29,10 @@ public class BinlogConsumer implements Consumer<ConsumerRecords<String, String>>
 
     private final Map<String, Map<String, MappingConfig>> mappingConfig;
 
-    public BinlogConsumer(StarrocksSyncService starrocksSyncService, List<MappingConfig> mappingConfigList) {
+    private final String taskId;
+
+    public BinlogConsumer(String taskId,StarrocksSyncService starrocksSyncService, List<MappingConfig> mappingConfigList) {
+        this.taskId = taskId;
         this.starrocksSyncService = starrocksSyncService;
         this.mappingConfig = transform(mappingConfigList);
     }
@@ -42,7 +45,7 @@ public class BinlogConsumer implements Consumer<ConsumerRecords<String, String>>
             dmlList.add(JSONObject.toJavaObject(JSONObject.parseObject(value), Dml.class));
         }
         // 转换
-        starrocksSyncService.sync(mappingConfig, dmlList);
+        starrocksSyncService.sync(taskId,mappingConfig, dmlList);
     }
 
     private Map<String, Map<String, MappingConfig>> transform(List<MappingConfig> mappingConfigList){

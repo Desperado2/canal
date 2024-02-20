@@ -1,5 +1,6 @@
 package com.alibaba.otter.canal.k2s.kafka.helper;
 
+import com.alibaba.otter.canal.k2s.cache.TaskRestartCache;
 import com.alibaba.otter.canal.k2s.config.ConsumerTaskConfig;
 import com.alibaba.otter.canal.k2s.kafka.container.ConsumerContainer;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
@@ -163,11 +164,14 @@ public class KafkaHelper {
      * @param topic topic名称
      * @param consumer 消费者
      */
-    public void addConsumer(String taskId, String topic, List<Integer> partitionList, ConsumerTaskConfig consumerTaskConfig, Consumer<ConsumerRecords<String, String>> consumer) {
+    public void addConsumer(String taskId, String topic, List<Integer> partitionList,
+                            ConsumerTaskConfig consumerTaskConfig,
+                            Consumer<ConsumerRecords<String, String>> consumer,
+                            TaskRestartCache taskRestartCache) {
         MDC.put("taskId", taskId);
         LOGGER.info("taskId:{}，将为topic：[{}] 创建消费者, 消费者groupId:[{}]",taskId, topic, consumerTaskConfig.getGroupId());
         MDC.remove("taskId");
-        consumerContainer.addConsumer(taskId, topic, partitionList, consumerTaskConfig, consumer);
+        consumerContainer.addConsumer(taskId, topic, partitionList, consumerTaskConfig, consumer, taskRestartCache);
     }
 
     /**

@@ -9,6 +9,7 @@ import com.alibaba.otter.canal.k2s.starrocks.sink.StarRocksSinkOptions;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public class StarrocksTemplate {
         return jsonObject.toJSONString();
     }
 
-    public void sink(StarRocksBufferData bufferData) {
+    public void sink(String taskId, StarRocksBufferData bufferData) {
         if (bufferData == null || CollectionUtils.isEmpty(bufferData.getData())) {
             return;
         }
@@ -65,11 +66,13 @@ public class StarrocksTemplate {
         String table = srMapping.getSrcTable();
         String srDataBase = srMapping.getDstDatabase();
         String srTable = srMapping.getDstTable();
-        logger.info("Sync table {}.{}", database, table);
+        MDC.put("taskId", taskId);
+        logger.info("taskId:{}, Sync table {}.{}", database, table, taskId);
+        MDC.remove("taskId");
         List<String> columnList = srMapping.getContent().getColumns().stream()
                 .map(MappingConfig.MappingData.ColumnMapping::getDstField).collect(Collectors.toList());
         List<String> dstPkList = srMapping.getContent().getDstPkList();
-        StarRocksSinkOptions op = getStarRocksSinkOptions(srDataBase, srTable, columnList, dstPkList);
+        StarRocksSinkOptions op = getStarRocksSinkOptions(taskId, srDataBase, srTable, columnList, dstPkList);
 
         StarRocksSinkBufferEntity bufferEntity = new StarRocksSinkBufferEntity(op.getDatabaseName(), op.getTableName(), null);
         bufferEntity.setBuffer((ArrayList<byte[]>) bufferData.getData());
@@ -79,16 +82,21 @@ public class StarrocksTemplate {
 
         try {
             if (bufferData.getData().size() != 0 && bufferEntity.getBatchSize() > 0) {
+                MDC.put("taskId", taskId);
                 logger.info(String.format("StarRocks buffer Sinking triggered: db: [%s] table: [%s] rows[%d] label[%s].", database, table, bufferData.getData().size(), bufferEntity.getLabel()));
-                starRocksSinkManager.getStarrocksStreamLoadVisitor().doStreamLoad(bufferEntity);
+                MDC.remove("taskId");
+                starRocksSinkManager.getStarrocksStreamLoadVisitor().doStreamLoad(taskId,bufferEntity);
             }
         }catch (Exception e) {
+            MDC.put("taskId", taskId);
             logger.error("Sink table {}  data to StarRocks failed. The data is: {}  and  error message is: {}", database + "." + table, ConvertUtil.convertBytesToString(bufferEntity.getBuffer()), e.getMessage());
+            MDC.remove("taskId");
             throw new RuntimeException(e.getMessage(), e);
         }
     }
 
-    private StarRocksSinkOptions getStarRocksSinkOptions(String srDataBase, String srTable, List<String> columnList, List<String> dstPkList) {
+    private StarRocksSinkOptions getStarRocksSinkOptions(String taskId, String srDataBase, String srTable,
+                                                         List<String> columnList, List<String> dstPkList) {
         StarRocksSinkOptions op = StarRocksSinkOptions.builder()
                 .withProperty("jdbc-url", this.consumerTaskConfig.getJdbcUrl()  + srDataBase  + "?useSSL=false&serverTimezone=GMT")
                 .withProperty("load-url", this.consumerTaskConfig.getFeHost() + ":" + this.consumerTaskConfig.getFeHttpPort())
@@ -102,7 +110,7 @@ public class StarrocksTemplate {
                 .build();
 
         if (starRocksSinkManager == null) {
-            starRocksSinkManager = new StarRocksSinkManager(op, columnList == null ? null :columnList.toArray(new String[0]), dstPkList);
+            starRocksSinkManager = new StarRocksSinkManager(taskId, op, columnList == null ? null :columnList.toArray(new String[0]), dstPkList);
         } else {
             starRocksSinkManager.getStarrocksStreamLoadVisitor().setSinkOptions(op);
         }

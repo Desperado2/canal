@@ -3,6 +3,7 @@ package com.alibaba.otter.canal.k2s.monitor;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.otter.canal.k2s.cache.TaskRestartCache;
 import com.alibaba.otter.canal.k2s.config.ConsumerTaskConfig;
 import com.alibaba.otter.canal.k2s.config.KafkaToStarrocksConfig;
 import com.alibaba.otter.canal.k2s.client.AdminManageClient;
@@ -42,6 +43,9 @@ public class ConsumerTaskConfigMonitor {
 
     @Autowired
     private KafkaHelper kafkaHelper;
+
+    @Autowired
+    private TaskRestartCache taskRestartCache;
 
     @Autowired
     private AdminManageClient adminManageClient;
@@ -92,6 +96,19 @@ public class ConsumerTaskConfigMonitor {
     }
 
     /**
+     * 合并任务的配置信息
+     * @param taskId 配置信息
+     */
+    public void mergeConfigByTaskId(String taskId){
+        // 校验topic
+        MDC.put("taskId", taskId);
+        LOGGER.info("taskId：{}，任务重启", taskId);
+        MDC.remove("taskId");
+        ConsumerTaskConfig consumerTaskConfig = consumerTaskConfigCache.get(taskId);
+        mergeConfig(consumerTaskConfig);
+    }
+
+    /**
      * 删除任务的配置信息
      * @param consumerTaskConfig 配置信息
      */
@@ -130,7 +147,7 @@ public class ConsumerTaskConfigMonitor {
             StarrocksTemplate starrocksTemplate = new StarrocksTemplate(consumerTaskConfig);
             StarrocksSyncService starrocksSyncService = new StarrocksSyncService(starrocksTemplate);
             kafkaHelper.addConsumer(taskId,topic, partitionList, consumerTaskConfig,
-                    new BinlogConsumer(starrocksSyncService,mappingConfigList));
+                    new BinlogConsumer(taskId, starrocksSyncService, mappingConfigList), taskRestartCache);
             MDC.put("taskId", taskId);
             LOGGER.info("taskId：{}，创建消费者成功，topic:{}, groupId:{}", taskId, topic, consumerTaskConfig.getGroupId());
             MDC.remove("taskId");

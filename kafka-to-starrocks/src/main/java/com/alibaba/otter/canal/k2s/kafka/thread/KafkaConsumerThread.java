@@ -1,5 +1,6 @@
 package com.alibaba.otter.canal.k2s.kafka.thread;
 
+import com.alibaba.otter.canal.k2s.cache.TaskRestartCache;
 import com.alibaba.otter.canal.k2s.kafka.model.ConsumerInfo;
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -34,11 +35,14 @@ public class KafkaConsumerThread extends Thread{
     private final String taskId;
     private final KafkaConsumer<String, String> kafkaConsumer;
     private final Consumer<ConsumerRecords<String, String>> consumer;
+    private final TaskRestartCache taskRestartCache;
 
-    public KafkaConsumerThread(String taskId, KafkaConsumer<String, String> kafkaConsumer,Consumer<ConsumerRecords<String, String>> consumer){
+    public KafkaConsumerThread(String taskId, KafkaConsumer<String, String> kafkaConsumer,
+                               Consumer<ConsumerRecords<String, String>> consumer, TaskRestartCache taskRestartCache){
         this.kafkaConsumer = kafkaConsumer;
         this.consumer = consumer;
         this.taskId = taskId;
+        this.taskRestartCache = taskRestartCache;
     }
 
     @Override
@@ -64,6 +68,13 @@ public class KafkaConsumerThread extends Thread{
             MDC.put("taskId", taskId);
             LOGGER.info("taskId：{}，topic:{} 消费者运行异常!", taskId, StringUtils.join(subscription, ','),e);
             MDC.remove("taskId");
+            if(e.getMessage() != null && e.getMessage().contains("because of too many versions")){
+                // 1分钟之后重新加入消费者
+                MDC.put("taskId", taskId);
+                taskRestartCache.set(taskId, taskId, 60L);
+                LOGGER.info("taskId：{}，topic:{} 消费者加入重启队列，1分钟后重启!", taskId, StringUtils.join(subscription, ','));
+                MDC.remove("taskId");
+            }
         }finally {
             //关闭消费者
             try {

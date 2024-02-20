@@ -32,6 +32,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -77,8 +78,8 @@ public class StarRocksStreamLoadVisitor implements Serializable {
         this.sinkOptions =  sinkOptions;
     }
 
-    public Map<String, Object> doStreamLoad(StarRocksSinkBufferEntity bufferEntity) throws IOException {
-        String host = getAvailableHost();
+    public Map<String, Object> doStreamLoad(String taskId,StarRocksSinkBufferEntity bufferEntity) throws IOException {
+        String host = getAvailableHost(taskId);
         if (null == host) {
             throw new IOException("None of the hosts in `load_url` could be connected.");
         }
@@ -89,8 +90,11 @@ public class StarRocksStreamLoadVisitor implements Serializable {
             .append(bufferEntity.getTable())
             .append("/_stream_load")
             .toString();
+
+        MDC.put("taskId", taskId);
         LOG.info(String.format("Start to join batch data: label[%s].", bufferEntity.getLabel()));
-        Map<String, Object> loadResult = doHttpPut(loadUrl, bufferEntity.getLabel(), joinRows(bufferEntity.getBuffer(),  (int) bufferEntity.getBatchSize()));
+        MDC.remove("taskId");
+        Map<String, Object> loadResult = doHttpPut(taskId, loadUrl, bufferEntity.getLabel(), joinRows(bufferEntity.getBuffer(),  (int) bufferEntity.getBatchSize()));
 
         final String keyStatus = "Status";
         if (null == loadResult || !loadResult.containsKey(keyStatus)) {
@@ -98,29 +102,35 @@ public class StarRocksStreamLoadVisitor implements Serializable {
         }
         Integer numberFilteredRows = (Integer) loadResult.get("NumberFilteredRows");
         if (numberFilteredRows != 0) {
+            MDC.put("taskId", taskId);
             LOG.warn("Filter table {} data rows: {}", bufferEntity.getDatabase() + "." + bufferEntity.getTable(), numberFilteredRows);
+            MDC.remove("taskId");
         }
 
         if (LOG.isDebugEnabled()) {
+            MDC.put("taskId", taskId);
             LOG.debug(String.format("Stream Load response: \n%s\n", JSON.toJSONString(loadResult)));
+            MDC.remove("taskId");
         }
         if (RESULT_FAILED.equals(loadResult.get(keyStatus))) {
             Map<String, String> logMap = new HashMap<>();
             if (loadResult.containsKey("ErrorURL")) {
-                logMap.put("streamLoadErrorLog", getErrorLog((String) loadResult.get("ErrorURL")));
+                logMap.put("streamLoadErrorLog", getErrorLog(taskId, (String) loadResult.get("ErrorURL")));
             }
             throw new StarRocksStreamLoadFailedException(String.format("Failed to flush data to StarRocks, Error " +
                 "response: \n%s\n%s\n", JSON.toJSONString(loadResult), JSON.toJSONString(logMap)), loadResult);
         } else if (RESULT_LABEL_EXISTED.equals(loadResult.get(keyStatus))) {
+            MDC.put("taskId", taskId);
             LOG.error(String.format("Stream Load response: \n%s\n", JSON.toJSONString(loadResult)));
+            MDC.remove("taskId");
             // has to block-checking the state to get the final result
-            checkLabelState(host, bufferEntity.getLabel());
+            checkLabelState(taskId, host, bufferEntity.getLabel());
         }
         return loadResult;
     }
 
     @SuppressWarnings("unchecked")
-    private void checkLabelState(String host, String label) throws IOException {
+    private void checkLabelState(String taskId, String host, String label) throws IOException {
         int idx = 0;
         while(true) {
             try {
@@ -134,7 +144,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
                 httpGet.setHeader("Connection", "close");
 
                 try (CloseableHttpResponse resp = httpclient.execute(httpGet)) {
-                    HttpEntity respEntity = getHttpEntity(resp);
+                    HttpEntity respEntity = getHttpEntity(taskId, resp);
                     if (respEntity == null) {
                         throw new StarRocksStreamLoadFailedException(String.format("Failed to flush data to StarRocks, Error " +
                                 "could not get the final state of label[%s].\n", label), null);
@@ -145,7 +155,9 @@ public class StarRocksStreamLoadVisitor implements Serializable {
                         throw new StarRocksStreamLoadFailedException(String.format("Failed to flush data to StarRocks, Error " +
                                 "could not get the final state of label[%s]. response[%s]\n", label, EntityUtils.toString(respEntity)), null);
                     }
+                    MDC.put("taskId", taskId);
                     LOG.info(String.format("Checking label[%s] state[%s]\n", label, labelState));
+                    MDC.remove("taskId");
                     switch(labelState) {
                         case LAEBL_STATE_VISIBLE:
                         case LAEBL_STATE_COMMITTED:
@@ -165,14 +177,14 @@ public class StarRocksStreamLoadVisitor implements Serializable {
         }
     }
 
-    private String getErrorLog(String errorUrl) {
+    private String getErrorLog(String taskId,String errorUrl) {
         if (errorUrl == null || errorUrl.isEmpty() || !errorUrl.startsWith("http")) {
             return null;
         }
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(errorUrl);
             try (CloseableHttpResponse resp = httpclient.execute(httpGet)) {
-                HttpEntity respEntity = getHttpEntity(resp);
+                HttpEntity respEntity = getHttpEntity(taskId, resp);
                 if (respEntity == null) {
                     return null;
                 }
@@ -183,26 +195,27 @@ public class StarRocksStreamLoadVisitor implements Serializable {
                 return errorLog;
             }
         } catch (Exception e) {
+            MDC.put("taskId", taskId);
             LOG.warn("Failed to get error log.", e);
+            MDC.remove("taskId");
             return "Failed to get error log: " + e.getMessage();
         }
     }
 
-    private String getAvailableHost() {
+    private String getAvailableHost(String taskId) {
         List<String> hostList = sinkOptions.getLoadUrlList();
         long tmp = pos + hostList.size();
         while (pos < tmp) {
             String host = "http://" + hostList.get((int) (pos % hostList.size()));
-            if (tryHttpConnection(host)) {
+            if (tryHttpConnection(taskId,host)) {
                 pos++;
                 return host;
             }
         }
-
         return null;
     }
 
-    private boolean tryHttpConnection(String host) {
+    private boolean tryHttpConnection(String taskId, String host) {
         try {
             URL url = new URL(host);
             HttpURLConnection co =  (HttpURLConnection) url.openConnection();
@@ -211,7 +224,9 @@ public class StarRocksStreamLoadVisitor implements Serializable {
             co.disconnect();
             return true;
         } catch (Exception e1) {
+            MDC.put("taskId", taskId);
             LOG.warn("Failed to connect to address:{}", host, e1);
+            MDC.remove("taskId");
             return false;
         }
     }
@@ -246,8 +261,10 @@ public class StarRocksStreamLoadVisitor implements Serializable {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> doHttpPut(String loadUrl, String label, byte[] data) throws IOException {
+    private Map<String, Object> doHttpPut(String taskId, String loadUrl, String label, byte[] data) throws IOException {
+        MDC.put("taskId", taskId);
         LOG.info(String.format("Executing stream load to: '%s', size: '%s', thread: %d", loadUrl, data.length, Thread.currentThread().getId()));
+        MDC.remove("taskId");
         final HttpClientBuilder httpClientBuilder = HttpClients.custom()
             .setRedirectStrategy(new DefaultRedirectStrategy() {
                 @Override
@@ -277,7 +294,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
             httpPut.setEntity(new ByteArrayEntity(data));
             httpPut.setConfig(RequestConfig.custom().setRedirectsEnabled(true).build());
             try (CloseableHttpResponse resp = httpclient.execute(httpPut)) {
-                HttpEntity respEntity = getHttpEntity(resp);
+                HttpEntity respEntity = getHttpEntity(taskId, resp);
                 if (respEntity == null) {
                     return null;
                 }
@@ -289,18 +306,22 @@ public class StarRocksStreamLoadVisitor implements Serializable {
     private String getBasicAuthHeader(String username, String password) {
         String auth = username + ":" + password;
         byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.UTF_8));
-        return new StringBuilder("Basic ").append(new String(encodedAuth)).toString();
+        return "Basic " + new String(encodedAuth);
     }
 
-    private HttpEntity getHttpEntity(CloseableHttpResponse resp) {
+    private HttpEntity getHttpEntity(String taskId,CloseableHttpResponse resp) {
         int code = resp.getStatusLine().getStatusCode();
         if (200 != code) {
+            MDC.put("taskId", taskId);
             LOG.warn("Request failed with code:{}", code);
+            MDC.remove("taskId");
             return null;
         }
         HttpEntity respEntity = resp.getEntity();
         if (null == respEntity) {
+            MDC.put("taskId", taskId);
             LOG.warn("Request failed with empty response.");
+            MDC.remove("taskId");
             return null;
         }
         return respEntity;

@@ -1,6 +1,7 @@
 package com.alibaba.otter.canal.k2s.kafka.container;
 
 
+import com.alibaba.otter.canal.k2s.cache.TaskRestartCache;
 import com.alibaba.otter.canal.k2s.config.ConsumerTaskConfig;
 import com.alibaba.otter.canal.k2s.kafka.helper.KafkaPropertiesHelper;
 import com.alibaba.otter.canal.k2s.kafka.model.ConsumerInfo;
@@ -52,7 +53,8 @@ public class ConsumerContainer {
      */
     public synchronized void addConsumer(String taskId, String topic, List<Integer> partitionList,
                                          ConsumerTaskConfig consumerTaskConfig,
-                                         Consumer<ConsumerRecords<String, String>> consumer){
+                                         Consumer<ConsumerRecords<String, String>> consumer,
+                                         TaskRestartCache taskRestartCache){
         if(kafkaConsumerThreadMap.containsKey(topic)){
             MDC.put("taskId", taskId);
             LOGGER.warn("重复创建消费者：{}", topic);
@@ -77,7 +79,7 @@ public class ConsumerContainer {
             stringStringKafkaConsumer.assign(partitions);
         }
         // 创建消费者线程去消费
-        KafkaConsumerThread kafkaConsumerThread = new KafkaConsumerThread(taskId, stringStringKafkaConsumer, consumer);
+        KafkaConsumerThread kafkaConsumerThread = new KafkaConsumerThread(taskId, stringStringKafkaConsumer, consumer, taskRestartCache);
         kafkaConsumerThread.start();
         kafkaConsumerThreadMap.put(topic, kafkaConsumerThread);
         MDC.put("taskId", taskId);

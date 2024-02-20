@@ -17,6 +17,7 @@ package com.alibaba.otter.canal.k2s.starrocks.manager;
 import com.alibaba.otter.canal.k2s.starrocks.connection.StarRocksJdbcConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -44,23 +45,31 @@ public class StarRocksQueryVisitor implements Serializable {
         this.table = table;
     }
 
-    public List<Map<String, Object>> getTableColumnsMetaData() {
+    public List<Map<String, Object>> getTableColumnsMetaData(String taskId) {
         final String query = "select `COLUMN_NAME`, `COLUMN_KEY`, `DATA_TYPE`, `COLUMN_SIZE`, `DECIMAL_DIGITS` from `information_schema`.`COLUMNS` where `TABLE_SCHEMA`=? and `TABLE_NAME`=?;";
         List<Map<String, Object>> rows;
         try {
             if (LOG.isDebugEnabled()) {
-                LOG.debug(String.format("Executing query '%s'", query));
+                MDC.put("taskId", taskId);
+                LOG.debug(String.format("taskId: %s, Executing query '%s'", taskId,query));
+                MDC.remove("taskId");
             }
             rows = executeQuery(query, this.database, this.table);
         } catch (ClassNotFoundException se) {
+            MDC.put("taskId", taskId);
+            LOG.error("taskId:{}, Failed to find jdbc driver." + se.getMessage(),taskId);
+            MDC.remove("taskId");
             throw new IllegalArgumentException("Failed to find jdbc driver." + se.getMessage(), se);
         } catch (SQLException se) {
+            MDC.put("taskId", taskId);
+            LOG.error("taskId:{}, Failed to get table schema info from StarRocks. " + se.getMessage(),taskId);
+            MDC.remove("taskId");
             throw new IllegalArgumentException("Failed to get table schema info from StarRocks. " + se.getMessage(), se);
         }
         return rows;
     }
 
-    public String getStarRocksVersion() {
+    public String getStarRocksVersion(String taskId) {
         final String query = "select current_version() as ver;";
         List<Map<String, Object>> rows;
         try {
@@ -72,11 +81,19 @@ public class StarRocksQueryVisitor implements Serializable {
                 return "";
             }
             String version = rows.get(0).get("ver").toString();
-            LOG.info(String.format("StarRocks version: [%s].", version));
+            MDC.put("taskId", taskId);
+            LOG.info(String.format("taskId: %s, StarRocks version: [%s].", taskId,version));
+            MDC.remove("task");
             return version;
         } catch (ClassNotFoundException se) {
+            MDC.put("taskId", taskId);
+            LOG.info(String.format("taskId: %s, Failed to find jdbc driver." + se.getMessage(), taskId));
+            MDC.remove("task");
             throw new IllegalArgumentException("Failed to find jdbc driver." + se.getMessage(), se);
         } catch (SQLException se) {
+            MDC.put("taskId", taskId);
+            LOG.info(String.format("taskId: %s, Failed to get StarRocks version. " + se.getMessage(), taskId));
+            MDC.remove("task");
             throw new IllegalArgumentException("Failed to get StarRocks version. " + se.getMessage(), se);
         }
     }
