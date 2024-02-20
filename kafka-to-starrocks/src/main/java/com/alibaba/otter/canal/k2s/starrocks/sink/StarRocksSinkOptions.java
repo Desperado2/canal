@@ -32,8 +32,8 @@ import java.util.stream.Collectors;
 
 public class StarRocksSinkOptions implements Serializable {
 
-    private static final long serialVersionUID = 1l;
-    private static final long KILO_BYTES_SCALE = 1024l;
+    private static final long serialVersionUID = 1L;
+    private static final long KILO_BYTES_SCALE = 1024L;
     private static final long MEGA_BYTES_SCALE = KILO_BYTES_SCALE * KILO_BYTES_SCALE;
     private static final long GIGA_BYTES_SCALE = MEGA_BYTES_SCALE * KILO_BYTES_SCALE;
 
