@@ -20,6 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -34,29 +38,68 @@ public class KafkaConsumerThread extends Thread{
 
     private final String taskId;
     private final KafkaConsumer<String, String> kafkaConsumer;
-    private final Consumer<ConsumerRecords<String, String>> consumer;
+    private final Consumer<List<ConsumerRecord<String, String>>> consumer;
     private final TaskRestartCache taskRestartCache;
+    /**
+     * 缓存消费的消息
+     */
+    List<ConsumerRecord<String, String>> buffer;
+    /**
+     * 设置每达到多少条消息时提交偏移量
+     */
+    int commitBatch;
+    /**
+     * 设置超时时间
+     */
+    int commitTimeout;
+    /**
+     * 创建 ScheduledExecutorService 实例
+     */
+    ScheduledExecutorService scheduler;
 
-    public KafkaConsumerThread(String taskId, KafkaConsumer<String, String> kafkaConsumer,
-                               Consumer<ConsumerRecords<String, String>> consumer, TaskRestartCache taskRestartCache){
+    public KafkaConsumerThread(String taskId,
+                               Integer commitBatch,
+                               Integer commitTimeout,
+                               KafkaConsumer<String, String> kafkaConsumer,
+                               Consumer<List<ConsumerRecord<String, String>>> consumer,
+                               TaskRestartCache taskRestartCache){
         this.kafkaConsumer = kafkaConsumer;
         this.consumer = consumer;
         this.taskId = taskId;
         this.taskRestartCache = taskRestartCache;
+        this.commitBatch = commitBatch;
+        this.commitTimeout = commitTimeout;
+        buffer = new CopyOnWriteArrayList<>();
+        scheduler = Executors.newScheduledThreadPool(1);
     }
 
     @Override
     public void run() {
         try{
+            // 定时任务：在超时后提交偏移量
+            Runnable commitTask = () -> {
+                if (!buffer.isEmpty()) {
+                    processAndCommitMessages(buffer, kafkaConsumer);
+                    buffer.clear(); // 清空缓存
+                }
+            };
             while (true){
                 if(isInterrupted()){
                     throw new InterruptedException();
                 }
+                // 使用 scheduleAtFixedRate() 方法按固定的时间间隔执行提交偏移量的操作
+                scheduler.scheduleAtFixedRate(commitTask, commitTimeout, commitTimeout, TimeUnit.MILLISECONDS);
                 // 拉取kafka消息
                 ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(1000));
-                consumer.accept(records);
-                // 手动提交ack确认
-                kafkaConsumer.commitSync();
+                for (ConsumerRecord<String, String> record : records) {
+                    // 处理消息
+                    buffer.add(record);
+                    // 达到提交偏移量的条件时，取消定时任务并处理消息并提交偏移量
+                    if (buffer.size() >= commitBatch) {
+                        processAndCommitMessages(buffer, kafkaConsumer);
+                        buffer.clear(); // 清空缓存
+                    }
+                }
             }
         }catch (InterruptedException e){
             Set<String> subscription = kafkaConsumer.subscription();
@@ -76,8 +119,12 @@ public class KafkaConsumerThread extends Thread{
                 MDC.remove("taskId");
             }
         }finally {
-            //关闭消费者
             try {
+                scheduler.shutdown(); // 在关闭消费者之前，关闭定时任务
+                // 在关闭消费者之前，确保最后一次提交偏移量
+                if (!buffer.isEmpty()) {
+                    processAndCommitMessages(buffer, kafkaConsumer);
+                }
                 kafkaConsumer.close();
             } catch (Exception ex) {
             }
@@ -99,5 +146,17 @@ public class KafkaConsumerThread extends Thread{
             consumerInfoList.add(consumerInfo);
         }
         return consumerInfoList;
+    }
+
+    /**
+     * 处理消息并提交偏移量
+     * @param buffer 数据
+     * @param kafkaConsumer  kafka消费者
+     */
+    private void processAndCommitMessages(List<ConsumerRecord<String, String>> buffer, KafkaConsumer<String, String> kafkaConsumer) {
+        // 处理消息的逻辑
+        consumer.accept(buffer);
+        // 提交偏移量
+        kafkaConsumer.commitSync();
     }
 }

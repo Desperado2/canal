@@ -7,5 +7,7 @@
   "feHttpPort": 8050,
   "userName": "",
   "passWord": "",
-  "consumerPolicy": "E-C"
+  "consumerPolicy": "E-C",
+  "commitBatch": 100,
+  "commitTimeout": 1000
 }

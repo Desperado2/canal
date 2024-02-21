@@ -41,6 +41,15 @@ public class ConsumerTaskConfigMonitor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerContainer.class);
 
+    /**
+     * 默认提交批量大小 500条
+     */
+    private static final Integer DEFAULT_COMMIT_BATCH = 500;
+
+    /**
+     * 默认提交超时实际 1秒
+     */
+    private static final Integer DEFAULT_COMMIT_TIMEOUT = 1000;
     @Autowired
     private KafkaHelper kafkaHelper;
 
@@ -67,6 +76,12 @@ public class ConsumerTaskConfigMonitor {
      */
     public void mergeConfig(ConsumerTaskConfig consumerTaskConfig){
         // 校验topic
+        if(consumerTaskConfig.getCommitBatch() == null){
+            consumerTaskConfig.setCommitBatch(DEFAULT_COMMIT_BATCH);
+        }
+        if(consumerTaskConfig.getCommitTimeout() == null){
+            consumerTaskConfig.setCommitTimeout(DEFAULT_COMMIT_TIMEOUT);
+        }
         boolean checkTopic = checkTopic(consumerTaskConfig);
         if(!checkTopic){
             return;

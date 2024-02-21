@@ -73,6 +73,20 @@ public class ConsumerTaskConfig {
 
     private String offsetReset;
 
+
+    /**
+     * 提交批次大小
+     */
+
+    private Integer commitBatch;
+
+
+    /**
+     * 提交超时时间
+     */
+
+    private Integer commitTimeout;
+
     private Boolean isRunning = false;
 
     public String getGroupId() {
@@ -177,5 +191,21 @@ public class ConsumerTaskConfig {
 
     public void setOffsetReset(String offsetReset) {
         this.offsetReset = offsetReset;
+    }
+
+    public Integer getCommitBatch() {
+        return commitBatch;
+    }
+
+    public void setCommitBatch(Integer commitBatch) {
+        this.commitBatch = commitBatch;
+    }
+
+    public Integer getCommitTimeout() {
+        return commitTimeout;
+    }
+
+    public void setCommitTimeout(Integer commitTimeout) {
+        this.commitTimeout = commitTimeout;
     }
 }

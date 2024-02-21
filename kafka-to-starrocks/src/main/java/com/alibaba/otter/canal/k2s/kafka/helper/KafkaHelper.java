@@ -9,6 +9,7 @@ import org.apache.kafka.clients.admin.DescribeTopicsResult;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -166,7 +167,7 @@ public class KafkaHelper {
      */
     public void addConsumer(String taskId, String topic, List<Integer> partitionList,
                             ConsumerTaskConfig consumerTaskConfig,
-                            Consumer<ConsumerRecords<String, String>> consumer,
+                            Consumer<List<ConsumerRecord<String, String>>> consumer,
                             TaskRestartCache taskRestartCache) {
         MDC.put("taskId", taskId);
         LOGGER.info("taskId:{}，将为topic：[{}] 创建消费者, 消费者groupId:[{}]",taskId, topic, consumerTaskConfig.getGroupId());

@@ -21,7 +21,7 @@ import java.util.function.Consumer;
  * @author mujingjing
  * @date 2024/2/4
  **/
-public class BinlogConsumer implements Consumer<ConsumerRecords<String, String>> {
+public class BinlogConsumer implements Consumer<List<ConsumerRecord<String, String>>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BinlogConsumer.class);
 
@@ -35,17 +35,6 @@ public class BinlogConsumer implements Consumer<ConsumerRecords<String, String>>
         this.taskId = taskId;
         this.starrocksSyncService = starrocksSyncService;
         this.mappingConfig = transform(mappingConfigList);
-    }
-
-    @Override
-    public void accept(ConsumerRecords<String, String> stringStringConsumerRecord) {
-        List<Dml> dmlList = new ArrayList<>();
-        for (ConsumerRecord<String, String> stringConsumerRecord : stringStringConsumerRecord) {
-            String value = stringConsumerRecord.value();
-            dmlList.add(JSONObject.toJavaObject(JSONObject.parseObject(value), Dml.class));
-        }
-        // 转换
-        starrocksSyncService.sync(taskId,mappingConfig, dmlList);
     }
 
     private Map<String, Map<String, MappingConfig>> transform(List<MappingConfig> mappingConfigList){
@@ -62,5 +51,16 @@ public class BinlogConsumer implements Consumer<ConsumerRecords<String, String>>
             }
         }
         return mapMap;
+    }
+
+    @Override
+    public void accept(List<ConsumerRecord<String, String>> consumerRecords) {
+        List<Dml> dmlList = new ArrayList<>();
+        for (ConsumerRecord<String, String> consumerRecord : consumerRecords) {
+            String value = consumerRecord.value();
+            dmlList.add(JSONObject.toJavaObject(JSONObject.parseObject(value), Dml.class));
+        }
+        // 转换
+        starrocksSyncService.sync(taskId,mappingConfig, dmlList);
     }
 }

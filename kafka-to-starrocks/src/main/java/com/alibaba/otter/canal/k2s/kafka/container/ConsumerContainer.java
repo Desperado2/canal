@@ -53,7 +53,7 @@ public class ConsumerContainer {
      */
     public synchronized void addConsumer(String taskId, String topic, List<Integer> partitionList,
                                          ConsumerTaskConfig consumerTaskConfig,
-                                         Consumer<ConsumerRecords<String, String>> consumer,
+                                         Consumer<List<ConsumerRecord<String, String>>> consumer,
                                          TaskRestartCache taskRestartCache){
         if(kafkaConsumerThreadMap.containsKey(topic)){
             MDC.put("taskId", taskId);
@@ -79,7 +79,10 @@ public class ConsumerContainer {
             stringStringKafkaConsumer.assign(partitions);
         }
         // 创建消费者线程去消费
-        KafkaConsumerThread kafkaConsumerThread = new KafkaConsumerThread(taskId, stringStringKafkaConsumer, consumer, taskRestartCache);
+        KafkaConsumerThread kafkaConsumerThread = new KafkaConsumerThread(taskId,
+                consumerTaskConfig.getCommitBatch(),
+                consumerTaskConfig.getCommitTimeout(),
+                stringStringKafkaConsumer, consumer, taskRestartCache);
         kafkaConsumerThread.start();
         kafkaConsumerThreadMap.put(topic, kafkaConsumerThread);
         MDC.put("taskId", taskId);
