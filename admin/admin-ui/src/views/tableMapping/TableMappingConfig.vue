@@ -18,7 +18,10 @@
       1.columns: 原表与目标表直接的字段级映射。<br>
       &nbsp;&nbsp; A: srcField: 原表字段名称，除了支持原表的字段之外，还支持以下值：<br>
       <br>
-      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${DATABASE_NAME}: 表示当前的原表的表名。<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${DATABASE_INSTANCE}: 表示当前的原表所在库的实例信息。<br>
+      <br>
+      <br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${DATABASE_NAME}: 表示当前的原表的库名。<br>
       <br>
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${TABLE_NAME}: 表示当前的原表的表名。<br>
       <br>

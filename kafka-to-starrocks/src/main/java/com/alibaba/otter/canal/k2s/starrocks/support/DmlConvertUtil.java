@@ -28,6 +28,10 @@ public class DmlConvertUtil {
      */
     private static final String SYNC_TIME_COLUMN = "${SYNC_TIME}";
 
+    /**
+     * 数据库示例内容
+     */
+    private static final String DATABASE_INSTANCE_COLUMN = "${DATABASE_INSTANCE}";
 
     /**
      * 函数字段前缀
@@ -44,7 +48,7 @@ public class DmlConvertUtil {
      * @param columnMappingMap 字段映射
      * @return 映射之后的值
      */
-    public static Map<String, Object> transform(String database,String table, Long ts, Map<String, Object> rowData,  Map<String, String> columnMappingMap){
+    public static Map<String, Object> transform(String instance, String database,String table, Long ts, Map<String, Object> rowData,  Map<String, String> columnMappingMap){
         // 进行转换
         Map<String, Object> newRowData = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : columnMappingMap.entrySet()) {
@@ -53,6 +57,8 @@ public class DmlConvertUtil {
             // 原始字段存在表中
             if(rowData.containsKey(srcKey)){
                 newRowData.put(destKey, rowData.get(srcKey));
+            }else if(DATABASE_INSTANCE_COLUMN.equalsIgnoreCase(srcKey)){
+                newRowData.put(destKey, instance);
             }else if(DATABASE_COLUMN.equalsIgnoreCase(srcKey)){
                 newRowData.put(destKey, database);
             }else if(TABLE_COLUMN.equalsIgnoreCase(srcKey)){

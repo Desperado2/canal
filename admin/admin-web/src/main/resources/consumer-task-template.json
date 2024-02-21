@@ -6,5 +6,7 @@
   "feHost":  "",
   "feHttpPort":  "",
   "userName": "",
-  "passWord": ""
+  "passWord": "",
+  "commitBatch": 100,
+  "commitTimeout": 1000
 }

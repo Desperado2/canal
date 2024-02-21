@@ -112,7 +112,7 @@ public class StarrocksSyncService {
         String type = dml.getType();
         for (Map<String, Object> rowData : data) {
             String jsonData;
-            rowData = DmlConvertUtil.transform(dml.getDatabase(), dml.getTable(), dml.getTs(), rowData, columnMappingMap);
+            rowData = DmlConvertUtil.transform(dml.getInstance(),dml.getDatabase(), dml.getTable(), dml.getTs(), rowData, columnMappingMap);
             if ("INSERT".equalsIgnoreCase(type) && eventType.contains("INSERT")) {
                 jsonData = starrocksTemplate.upsert(rowData);
             } else if ("UPDATE".equalsIgnoreCase(type) && eventType.contains("UPDATE")) {

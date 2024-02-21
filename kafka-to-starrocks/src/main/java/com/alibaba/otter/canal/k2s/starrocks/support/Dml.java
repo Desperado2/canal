@@ -13,7 +13,7 @@ import java.util.Map;
 public class Dml implements Serializable {
 
     private static final long         serialVersionUID = 2611556444074013268L;
-
+    private String instance; // 数据库示例信息
     private String                    database;                               // 数据库或schema
     private String                    table;                                  // 表名
     private List<String>              pkNames;
@@ -26,6 +26,14 @@ public class Dml implements Serializable {
     private String                    sql;                                    // 执行的sql, dml sql为空
     private List<Map<String, Object>> data;                                   // 数据列表
     private List<Map<String, Object>> old;                                    // 旧数据列表, 用于update, size和data的size一一对应
+
+    public String getInstance() {
+        return instance;
+    }
+
+    public void setInstance(String instance) {
+        this.instance = instance;
+    }
 
     public String getDatabase() {
         return database;

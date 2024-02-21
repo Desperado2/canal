@@ -88,6 +88,7 @@
         <div>1.columns: 原表与目标表直接的字段级映射。</div>
         <div>&nbsp;&nbsp;&nbsp;A: srcField: 原表字段名称，除了支持原表的字段之外，还支持以下值：</div>
         <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ${DATABASE_NAME}: 表示当前的原表的表名。</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ${DATABASE_INSTANCE}: 表示当前的原表的数据库实例。</div>
         <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ${TABLE_NAME}: 表示当前的原表的表名。</div>
         <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ${SYNC_TIME}: 表示该条ddl的同步时间。</div>
         <div>&nbsp;&nbsp;&nbsp;B: dstField: 目标表的字段名称</div>
@@ -141,7 +142,13 @@ export default {
           ' 4:L-B:无论是否消费过，都从最新数据开始消费。\n'+
           ' 如不是该四种情况，默认为：E-C'
 
-      }
+      },{
+          name: 'commitBatch',
+          desc: '批量写入kafka的最大数据条数'
+      },{
+          name: 'commitTimeout',
+          desc: '批量写入kafka的最大时间限制，单位:毫秒'
+     }
       ],
       tableRegexInfo:[
         {
