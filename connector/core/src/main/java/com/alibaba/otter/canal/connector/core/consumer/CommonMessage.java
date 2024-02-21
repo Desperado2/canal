@@ -8,6 +8,7 @@ public class CommonMessage implements Serializable {
 
     private static final long         serialVersionUID = 2611556444074013268L;
 
+    private String                    instanceId;                               // 数据库实例
     private String                    database;                               // 数据库或schema
     private String                    table;                                  // 表名
     private List<String>              pkNames;
@@ -24,6 +25,22 @@ public class CommonMessage implements Serializable {
     private List<Map<String, Object>> data;
     // 旧数据列表,用于update,size和data的size一一对应
     private List<Map<String, Object>> old;
+
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
+    }
+
+    public Boolean getDdl() {
+        return isDdl;
+    }
+
+    public void setDdl(Boolean ddl) {
+        isDdl = ddl;
+    }
 
     public String getDatabase() {
         return database;
@@ -106,6 +123,7 @@ public class CommonMessage implements Serializable {
     }
 
     public void clear() {
+        instanceId = null;
         database = null;
         table = null;
         type = null;

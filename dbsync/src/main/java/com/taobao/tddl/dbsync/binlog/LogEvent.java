@@ -423,12 +423,22 @@ public abstract class LogEvent {
      */
     protected int              semival;
 
+    private String instanceAddress;
+
     public int getSemival() {
         return semival;
     }
 
     public void setSemival(int semival) {
         this.semival = semival;
+    }
+
+    public String getInstanceAddress() {
+        return instanceAddress;
+    }
+
+    public void setInstanceAddress(String instanceAddress) {
+        this.instanceAddress = instanceAddress;
     }
 
     protected LogEvent(LogHeader header){

@@ -29,6 +29,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.utils.PacketManager;
 public class MysqlConnector {
 
     private static final Logger logger            = LoggerFactory.getLogger(MysqlConnector.class);
+    private String   url;
     private InetSocketAddress   address;
     private String              username;
     private String              password;
@@ -53,19 +54,18 @@ public class MysqlConnector {
     public MysqlConnector(){
     }
 
-    public MysqlConnector(InetSocketAddress address, String username, String password){
+    public MysqlConnector(String url,InetSocketAddress address, String username, String password){
         String addr = address.getHostString();
         int port = address.getPort();
         this.address = new InetSocketAddress(addr, port);
-
+        this.url = url;
         this.username = username;
         this.password = password;
     }
 
-    public MysqlConnector(InetSocketAddress address, String username, String password, byte charsetNumber,
+    public MysqlConnector(String url, InetSocketAddress address, String username, String password, byte charsetNumber,
                           String defaultSchema){
-        this(address, username, password);
-
+        this(url,address, username, password);
         this.charsetNumber = charsetNumber;
         this.defaultSchema = defaultSchema;
     }
@@ -131,6 +131,7 @@ public class MysqlConnector {
 
     public MysqlConnector fork() {
         MysqlConnector connector = new MysqlConnector();
+        connector.setUrl(getUrl());
         connector.setCharsetNumber(getCharsetNumber());
         connector.setDefaultSchema(getDefaultSchema());
         connector.setAddress(getAddress());
@@ -362,6 +363,14 @@ public class MysqlConnector {
             handshakePacket.seed.length,
             handshakePacket.restOfScrambleBuff.length);
         return dest;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     public InetSocketAddress getAddress() {

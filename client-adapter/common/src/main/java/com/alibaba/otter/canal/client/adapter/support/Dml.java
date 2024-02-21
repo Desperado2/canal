@@ -14,6 +14,7 @@ public class Dml implements Serializable {
 
     private static final long         serialVersionUID = 2611556444074013268L;
 
+    private String                    instanceId;                               // 数据库实例
     private String                    destination;                            // 对应canal的实例或者MQ的topic
     private String                    groupId;                                // 对应mq的group id
     private String                    database;                               // 数据库或schema
@@ -28,6 +29,14 @@ public class Dml implements Serializable {
     private String                    sql;                                    // 执行的sql, dml sql为空
     private List<Map<String, Object>> data;                                   // 数据列表
     private List<Map<String, Object>> old;                                    // 旧数据列表, 用于update, size和data的size一一对应
+
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
+    }
 
     public String getDestination() {
         return destination;

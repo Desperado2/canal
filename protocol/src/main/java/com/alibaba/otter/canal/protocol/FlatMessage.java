@@ -13,6 +13,7 @@ public class FlatMessage implements Serializable {
 
     private static final long         serialVersionUID = -3386650678735860050L;
     private long                      id;
+    private String                    instance;
     private String                    database;
     private String                    table;
     private List<String>              pkNames;
@@ -42,6 +43,14 @@ public class FlatMessage implements Serializable {
 
     public void setId(long id) {
         this.id = id;
+    }
+
+    public String getInstance() {
+        return instance;
+    }
+
+    public void setInstance(String instance) {
+        this.instance = instance;
     }
 
     public String getDatabase() {
@@ -157,7 +166,7 @@ public class FlatMessage implements Serializable {
 
     @Override
     public String toString() {
-        return "FlatMessage [id=" + id + ", database=" + database + ", table=" + table + ", isDdl=" + isDdl + ", type="
+        return "FlatMessage [id=" + id + ", instance=" + instance +", database=" + database + ", table=" + table + ", isDdl=" + isDdl + ", type="
                + type + ", es=" + es + ", ts=" + ts + ", sql=" + sql + ", sqlType=" + sqlType + ", mysqlType="
                + mysqlType + ", data=" + data + ", old=" + old + ", gtid=" + gtid +"]";
     }

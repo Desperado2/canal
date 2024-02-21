@@ -48,6 +48,12 @@ public class MessageUtil {
             msg.setType(eventType.toString());
             msg.setEs(entry.getHeader().getExecuteTime());
             msg.setIsDdl(rowChange.getIsDdl());
+            for (CanalEntry.Pair pair : rowChange.getPropsList()) {
+                if("instance".equals(pair.getKey())){
+                    msg.setInstanceId(pair.getValue());
+                    break;
+                }
+            }
             msg.setTs(System.currentTimeMillis());
             msg.setSql(rowChange.getSql());
             msgs.add(msg);

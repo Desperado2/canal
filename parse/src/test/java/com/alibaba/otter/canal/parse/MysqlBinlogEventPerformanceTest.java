@@ -23,7 +23,7 @@ public class MysqlBinlogEventPerformanceTest {
 
     public static void main(String args[]) {
         try (DirectLogFetcher fetcher = new DirectLogFetcher()) {
-            MysqlConnector connector = new MysqlConnector(new InetSocketAddress("127.0.0.1", 3306), "root", "hello");
+            MysqlConnector connector = new MysqlConnector("127.0.0.1:3306", new InetSocketAddress("127.0.0.1", 3306), "root", "hello");
             connector.connect();
             updateSettings(connector);
             sendBinlogDump(connector, "mysql-bin.000006", 120L, 3);

@@ -17,6 +17,7 @@ public class AuthenticationInfo {
 
 
     private InetSocketAddress address;            // 主库信息
+    private String url;            // 链接信息
     private String            username;           // 帐号
     private String            password;           // 密码
     private String            defaultDatabaseName;// 默认链接的数据库
@@ -44,12 +45,28 @@ public class AuthenticationInfo {
         this.defaultDatabaseName = defaultDatabaseName;
     }
 
+    public AuthenticationInfo(InetSocketAddress address, String url, String username, String password, String defaultDatabaseName) {
+        this.address = address;
+        this.url = url;
+        this.username = username;
+        this.password = password;
+        this.defaultDatabaseName = defaultDatabaseName;
+    }
+
     public InetSocketAddress getAddress() {
         return address;
     }
 
     public void setAddress(InetSocketAddress address) {
         this.address = address;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     public String getUsername() {

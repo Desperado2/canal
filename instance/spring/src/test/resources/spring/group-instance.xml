@@ -121,6 +121,7 @@
 		<property name="masterInfo">
 			<bean class="com.alibaba.otter.canal.parse.support.AuthenticationInfo">
 				<property name="address" value="${canal.instance.master1.address}" />
+				<property name="url" value="${canal.instance.master.address}" />
 				<property name="username" value="${canal.instance.dbUsername:retl}" />
 				<property name="password" value="${canal.instance.dbPassword:retl}" />
 				<property name="defaultDatabaseName" value="${canal.instance.defaultDatabaseName:}" />
@@ -129,6 +130,7 @@
 		<property name="standbyInfo">
 			<bean class="com.alibaba.otter.canal.parse.support.AuthenticationInfo">
 				<property name="address" value="${canal.instance.standby1.address}" />
+				<property name="url" value="${canal.instance.master.address}" />
 				<property name="username" value="${canal.instance.dbUsername:retl}" />
 				<property name="password" value="${canal.instance.dbPassword:retl}" />
 				<property name="defaultDatabaseName" value="${canal.instance.defaultDatabaseName:}" />

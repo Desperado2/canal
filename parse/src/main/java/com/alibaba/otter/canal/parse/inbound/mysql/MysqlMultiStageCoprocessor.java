@@ -25,6 +25,7 @@ import com.taobao.tddl.dbsync.binlog.LogContext;
 import com.taobao.tddl.dbsync.binlog.LogDecoder;
 import com.taobao.tddl.dbsync.binlog.LogEvent;
 import com.taobao.tddl.dbsync.binlog.event.*;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * 针对解析器提供一个多阶段协同的处理
@@ -45,6 +46,7 @@ public class MysqlMultiStageCoprocessor extends AbstractCanalLifeCycle implement
     private LogEventConvert                   logEventConvert;
     private EventTransactionBuffer            transactionBuffer;
     private ErosaConnection                   connection;
+    private volatile String                   instanceAddress;
 
     private int                               parserThreadCount;
     private int                               ringBufferSize;
@@ -93,6 +95,7 @@ public class MysqlMultiStageCoprocessor extends AbstractCanalLifeCycle implement
         ExceptionHandler exceptionHandler = new SimpleFatalExceptionHandler();
         // stage 2
         this.logContext = new LogContext();
+        this.logContext.setInstanceAddress(instanceAddress);
         simpleParserStage = new BatchEventProcessor<>(disruptorMsgBuffer,
             sequenceBarrier,
             new SimpleParserStage(logContext));
@@ -261,7 +264,7 @@ public class MysqlMultiStageCoprocessor extends AbstractCanalLifeCycle implement
                     logEvent = decoder.decode(buffer, context);
                     event.setEvent(logEvent);
                 }
-
+                logEvent.setInstanceAddress(StringUtils.isNotEmpty(instanceAddress)? instanceAddress: context.getInstanceAddress());
                 int eventType = logEvent.getHeader().getType();
                 boolean needIterate = false;
 
@@ -290,6 +293,7 @@ public class MysqlMultiStageCoprocessor extends AbstractCanalLifeCycle implement
             TableMeta tableMeta = null;
             boolean needDmlParse = false;
             int eventType = logEvent.getHeader().getType();
+            logEvent.setInstanceAddress(StringUtils.isNotEmpty(instanceAddress)? instanceAddress: context.getInstanceAddress());
             switch (eventType) {
                 case LogEvent.WRITE_ROWS_EVENT_V1:
                 case LogEvent.WRITE_ROWS_EVENT:
@@ -581,4 +585,7 @@ public class MysqlMultiStageCoprocessor extends AbstractCanalLifeCycle implement
         this.gtidSet = gtidSet;
     }
 
+    public void setInstanceAddress(String instanceAddress) {
+        this.instanceAddress = instanceAddress;
+    }
 }

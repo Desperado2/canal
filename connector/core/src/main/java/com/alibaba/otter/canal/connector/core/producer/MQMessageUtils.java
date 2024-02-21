@@ -367,6 +367,12 @@ public class MQMessageUtils {
             CanalEntry.EventType eventType = rowChange.getEventType();
             FlatMessage flatMessage = new FlatMessage(id);
             flatMessages.add(flatMessage);
+            for (CanalEntry.Pair pair : rowChange.getPropsList()) {
+                if("instance".equals(pair.getKey())){
+                    flatMessage.setInstance(pair.getValue());
+                    break;
+                }
+            }
             flatMessage.setDatabase(entry.getHeader().getSchemaName());
             flatMessage.setTable(entry.getHeader().getTableName());
             flatMessage.setIsDdl(rowChange.getIsDdl());

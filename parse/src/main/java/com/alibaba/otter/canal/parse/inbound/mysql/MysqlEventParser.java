@@ -302,7 +302,8 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
     // =================== helper method =================
 
     private MysqlConnection buildMysqlConnection(AuthenticationInfo runningInfo) {
-        MysqlConnection connection = new MysqlConnection(runningInfo.getAddress(),
+        MysqlConnection connection = new MysqlConnection(runningInfo.getUrl(),
+            runningInfo.getAddress(),
             runningInfo.getUsername(),
             runningInfo.getPassword(),
             connectionCharsetNumber,
@@ -552,6 +553,7 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
 
             public boolean sink(LogEvent event) {
                 try {
+                    event.setInstanceAddress(masterInfo.getUrl());
                     CanalEntry.Entry entry = parseAndProfilingIfNecessary(event, true);
                     if (entry == null) {
                         return true;
@@ -779,6 +781,7 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
                 public boolean sink(LogEvent event) {
                     EntryPosition entryPosition = null;
                     try {
+                        event.setInstanceAddress(metaConnection.getConnector().getUrl());
                         CanalEntry.Entry entry = parseAndProfilingIfNecessary(event, true);
                         if (justForPositionTimestamp && logPosition.getPostion() == null && event.getWhen() > 0) {
                             // 初始位点

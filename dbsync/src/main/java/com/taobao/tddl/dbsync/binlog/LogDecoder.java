@@ -153,6 +153,7 @@ public final class LogDecoder {
                     // 原因:每个payload都是uncompress的eventLen,无法对应物理binlog的eventLen
                     // 隐患:memory计算空间大小时会出现放大的情况,影响getBatch的数量
                     deEvent.getHeader().setEventLen(event.getHeader().getEventLen());
+                    deEvent.setInstanceAddress(context.getInstanceAddress());
                     events.add(deEvent);
                 }
             } finally {

@@ -15,7 +15,7 @@ public class TableMetaCacheTest {
 
     @Test
     public void testSimple() throws IOException {
-        MysqlConnection connection = new MysqlConnection(new InetSocketAddress("127.0.0.1", 3306), "root", "hello");
+        MysqlConnection connection = new MysqlConnection("127.0.0.1", new InetSocketAddress("127.0.0.1", 3306), "root", "hello");
         try {
             connection.connect();
         } catch (IOException e) {

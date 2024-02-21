@@ -113,7 +113,8 @@ public class LocalBinlogEventParser extends AbstractMysqlEventParser implements 
     }
 
     private MysqlConnection buildMysqlConnection() {
-        MysqlConnection connection = new MysqlConnection(runningInfo.getAddress(),
+        MysqlConnection connection = new MysqlConnection(runningInfo.getUrl(),
+            runningInfo.getAddress(),
             runningInfo.getUsername(),
             runningInfo.getPassword(),
             connectionCharsetNumber,

@@ -151,6 +151,7 @@ public class MessageUtil {
             return null;
         }
         Dml dml = new Dml();
+        dml.setInstanceId(commonMessage.getInstanceId());
         dml.setDestination(destination);
         dml.setGroupId(groupId);
         dml.setDatabase(commonMessage.getDatabase());

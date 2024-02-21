@@ -105,6 +105,7 @@ public class LocalBinLogConnection implements ErosaConnection {
             LogContext context = new LogContext();
             fetcher.open(current, binlogPosition);
             context.setLogPosition(new LogPosition(binlogfilename, binlogPosition));
+            context.setInstanceAddress(binlogfilename);
             while (running) {
                 boolean needContinue = true;
                 LogEvent event = null;

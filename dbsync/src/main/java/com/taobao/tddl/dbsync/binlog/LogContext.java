@@ -17,6 +17,8 @@ public final class LogContext {
 
     private final Map<Long, TableMapLogEvent> mapOfTable = new HashMap<>();
 
+    private String instanceAddress;
+
     private FormatDescriptionLogEvent         formatDescription;
 
     private LogPosition                       logPosition;
@@ -35,6 +37,14 @@ public final class LogContext {
 
     public LogContext(FormatDescriptionLogEvent descriptionEvent){
         this.formatDescription = descriptionEvent;
+    }
+
+    public String getInstanceAddress() {
+        return instanceAddress;
+    }
+
+    public void setInstanceAddress(String instanceAddress) {
+        this.instanceAddress = instanceAddress;
     }
 
     public final LogPosition getLogPosition() {

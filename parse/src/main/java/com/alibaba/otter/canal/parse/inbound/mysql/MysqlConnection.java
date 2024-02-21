@@ -62,25 +62,27 @@ public class MysqlConnection implements ErosaConnection {
     public MysqlConnection(){
     }
 
-    public MysqlConnection(InetSocketAddress address, String username, String password){
+    public MysqlConnection(String url, InetSocketAddress address, String username, String password){
         authInfo = new AuthenticationInfo();
         authInfo.setAddress(address);
+        authInfo.setUrl(url);
         authInfo.setUsername(username);
         authInfo.setPassword(password);
-        connector = new MysqlConnector(address, username, password);
+        connector = new MysqlConnector(url, address, username, password);
         // 将connection里面的参数透传下
         connector.setSoTimeout(soTimeout);
         connector.setConnTimeout(connTimeout);
     }
 
-    public MysqlConnection(InetSocketAddress address, String username, String password, byte charsetNumber,
+    public MysqlConnection(String url, InetSocketAddress address, String username, String password, byte charsetNumber,
                            String defaultSchema){
         authInfo = new AuthenticationInfo();
+        authInfo.setUrl(url);
         authInfo.setAddress(address);
         authInfo.setUsername(username);
         authInfo.setPassword(password);
         authInfo.setDefaultDatabaseName(defaultSchema);
-        connector = new MysqlConnector(address, username, password, charsetNumber, defaultSchema);
+        connector = new MysqlConnector(url, address, username, password, charsetNumber, defaultSchema);
         // 将connection里面的参数透传下
         connector.setSoTimeout(soTimeout);
         connector.setConnTimeout(connTimeout);
@@ -148,6 +150,7 @@ public class MysqlConnection implements ErosaConnection {
             }
             context.setGtidSet(gtidSet);
         }
+        context.setInstanceAddress(connector.getUrl());
         context.setCompatiablePercona(compatiablePercona);
         context.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum));
         while (fetcher.fetch()) {
@@ -177,6 +180,7 @@ public class MysqlConnection implements ErosaConnection {
         LogContext context = new LogContext();
         context.setCompatiablePercona(compatiablePercona);
         context.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum));
+        context.setInstanceAddress(connector.getUrl());
         while (fetcher.fetch()) {
             accumulateReceivedBytes(fetcher.limit());
             LogEvent event = null;
@@ -211,6 +215,7 @@ public class MysqlConnection implements ErosaConnection {
             context.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum));
             // fix bug: #890 将gtid传输至context中，供decode使用
             context.setGtidSet(gtidSet);
+            context.setInstanceAddress(connector.getUrl());
             while (fetcher.fetch()) {
                 accumulateReceivedBytes(fetcher.limit());
                 LogEvent event = null;
@@ -248,6 +253,7 @@ public class MysqlConnection implements ErosaConnection {
         loadVersionComment();
         sendRegisterSlave();
         sendBinlogDump(binlogfilename, binlogPosition);
+        ((MysqlMultiStageCoprocessor) coprocessor).setInstanceAddress(connector.getUrl());
         ((MysqlMultiStageCoprocessor) coprocessor).setConnection(this);
         ((MysqlMultiStageCoprocessor) coprocessor).setBinlogChecksum(binlogChecksum);
         ((MysqlMultiStageCoprocessor) coprocessor).setCompatiablePercona(compatiablePercona);
@@ -276,6 +282,7 @@ public class MysqlConnection implements ErosaConnection {
         loadVersionComment();
         sendBinlogDumpGTID(gtidSet);
         ((MysqlMultiStageCoprocessor) coprocessor).setConnection(this);
+        ((MysqlMultiStageCoprocessor) coprocessor).setInstanceAddress(connector.getUrl());
         ((MysqlMultiStageCoprocessor) coprocessor).setBinlogChecksum(binlogChecksum);
         ((MysqlMultiStageCoprocessor) coprocessor).setCompatiablePercona(compatiablePercona);
         try (DirectLogFetcher fetcher = new DirectLogFetcher(connector.getReceiveBufferSize())) {
