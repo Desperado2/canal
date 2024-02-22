@@ -30,34 +30,13 @@
 - MySQL master 收到 dump 请求，开始推送 binary log 给 slave (即 canal )
 - canal 解析 binary log 对象(原始为 byte 流)
 
-## 文档
-
-- [Home](wiki/Home.md)
-- [Introduction](wiki/Introduction.md)
-- [QuickStart](wiki/QuickStart.md)
-  - [Docker QuickStart](wiki/Docker-QuickStart.md)
-  - [Canal Kafka/RocketMQ QuickStart](wiki/Canal-Kafka-RocketMQ-QuickStart.md)
-  - [Aliyun RDS for MySQL QuickStart](wiki/aliyun-RDS-QuickStart.md)
-  - [Prometheus QuickStart](wiki/Prometheus-QuickStart.md)
-- Canal Admin
-  - [Canal Admin QuickStart](wiki/Canal-Admin-QuickStart.md)
-  - [Canal Admin Guide](wiki/Canal-Admin-Guide.md)
-  - [Canal Admin ServerGuide](wiki/Canal-Admin-ServerGuide.md)
-  - [Canal Admin Docker](wiki/Canal-Admin-Docker.md)
-- [AdminGuide](wiki/AdminGuide.md)
-- [ClientExample](wiki/ClientExample.md)
-- [ClientAPI](wiki/ClientAPI.md)
-- [Performance](wiki/Performance.md)
-- [DevGuide](wiki/DevGuide.md)
-- [BinlogChange(MySQL 5.6)](wiki/BinlogChange%28mysql5.6%29.md)
-- [BinlogChange(MariaDB)](wiki/BinlogChange%28MariaDB%29.md)
-- [TableMetaTSDB](wiki/TableMetaTSDB.md)
-- [FAQ](wiki/FAQ.md)
 
 ## 自我构建
-```text
+```shell
 mvn clean install -Denv=release
 ```
+
+
 #### 构建生成文件说明
 构建完成之后，文件在项目根目录中的target/目录下面，生成的文件说明如下：
 canal.admin-1.1.8-SNAPSHOT.tar.gz   admin管理端  
@@ -66,3 +45,9 @@ canal.adapter-1.1.8-SNAPSHOT.tar.gz     canal数据同步服务
 canal.example-1.1.8-SNAPSHOT.tar.gz     canal示例  
 canal.kafka-to-starrocks-1.1.8-SNAPSHOT.tar.gz  kafka同步数据到StarRcoks服务
 
+## 本分支新增修改点
+0. 修改构建方式，直接在构建时自动构建前端项目，并自动复制起到public下面。
+1. 为了支持多实例分库分库，在mysql的binlog日志格式化之后新增了instance字段，该字段的值为instance管理中配置的canal.instance.master.address的值。 详见：[Binlog-Json](wiki/news/Binlog-Json.md) 
+2. 为了实现分库分表数据导入一张表，设计了Table Mapping功能，用于原表与目标表直接进行字段映射。 详见：[Table-Mapping](wiki/news/Table-Mapping.md)
+3. 实现了kafka-to-starrocks服务，以可视化的配置，读取kafka数据写入starrocks。详见：[Consumer-Server](wiki/news/Consumer-Server.md)
+4. 新增一个文档管理，将常用的文档进行集中展示，便于查询。详见：[Help-Article](wiki/news/Help-Article.md)
