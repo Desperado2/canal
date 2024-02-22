@@ -3,8 +3,10 @@ package com.alibaba.otter.canal.admin.client;
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.otter.canal.admin.model.BaseModel;
 import com.dtflys.forest.annotation.Body;
+import com.dtflys.forest.annotation.Delete;
 import com.dtflys.forest.annotation.Get;
 import com.dtflys.forest.annotation.Post;
+import com.dtflys.forest.annotation.Put;
 import com.dtflys.forest.annotation.Var;
 
 import java.util.List;
@@ -44,7 +46,7 @@ public interface TaskConsumerConfigClient {
      * @param basePath 路径
      * @return 状态
      */
-    @Post(value = "http://{basePath}/api/k-2-s/v1/task/update-task", headers = {
+    @Put(value = "http://{basePath}/api/k-2-s/v1/task/update-task", headers = {
             "Accept-Charset: utf-8",
             "Content-Type: application/json"
     })
@@ -57,7 +59,7 @@ public interface TaskConsumerConfigClient {
      * @param basePath 路径
      * @return 状态
      */
-    @Post(value = "http://{basePath}/api/k-2-s/v1/task/delete-task", headers = {
+    @Delete(value = "http://{basePath}/api/k-2-s/v1/task/delete-task", headers = {
             "Accept-Charset: utf-8",
             "Content-Type: application/json"
     })

@@ -6,8 +6,10 @@ import com.alibaba.otter.canal.k2s.config.ConsumerTaskConfig;
 import com.alibaba.otter.canal.k2s.kafka.helper.KafkaPropertiesHelper;
 import com.alibaba.otter.canal.k2s.kafka.model.ConsumerInfo;
 import com.alibaba.otter.canal.k2s.kafka.thread.KafkaConsumerThread;
+import com.alibaba.otter.canal.k2s.starrocks.config.MappingConfig;
+import com.alibaba.otter.canal.k2s.starrocks.service.StarrocksSyncService;
+import com.alibaba.otter.canal.k2s.starrocks.support.StarRocksBufferData;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -53,8 +55,10 @@ public class ConsumerContainer {
      */
     public synchronized void addConsumer(String taskId, String topic, List<Integer> partitionList,
                                          ConsumerTaskConfig consumerTaskConfig,
-                                         Consumer<List<ConsumerRecord<String, String>>> consumer,
-                                         TaskRestartCache taskRestartCache){
+                                         Consumer<Map<String, StarRocksBufferData>> consumer,
+                                         TaskRestartCache taskRestartCache,
+                                         StarrocksSyncService starrocksSyncService,
+                                         List<MappingConfig> mappingConfigList){
         if(kafkaConsumerThreadMap.containsKey(topic)){
             MDC.put("taskId", taskId);
             LOGGER.warn("重复创建消费者：{}", topic);
@@ -82,7 +86,8 @@ public class ConsumerContainer {
         KafkaConsumerThread kafkaConsumerThread = new KafkaConsumerThread(taskId,
                 consumerTaskConfig.getCommitBatch(),
                 consumerTaskConfig.getCommitTimeout(),
-                stringStringKafkaConsumer, consumer, taskRestartCache);
+                stringStringKafkaConsumer, consumer, taskRestartCache,
+                starrocksSyncService, mappingConfigList);
         kafkaConsumerThread.start();
         kafkaConsumerThreadMap.put(topic, kafkaConsumerThread);
         MDC.put("taskId", taskId);

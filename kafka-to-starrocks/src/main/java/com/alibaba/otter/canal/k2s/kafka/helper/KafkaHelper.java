@@ -3,6 +3,9 @@ package com.alibaba.otter.canal.k2s.kafka.helper;
 import com.alibaba.otter.canal.k2s.cache.TaskRestartCache;
 import com.alibaba.otter.canal.k2s.config.ConsumerTaskConfig;
 import com.alibaba.otter.canal.k2s.kafka.container.ConsumerContainer;
+import com.alibaba.otter.canal.k2s.starrocks.config.MappingConfig;
+import com.alibaba.otter.canal.k2s.starrocks.service.StarrocksSyncService;
+import com.alibaba.otter.canal.k2s.starrocks.support.StarRocksBufferData;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
 import org.apache.kafka.clients.admin.DescribeTopicsResult;
@@ -167,12 +170,15 @@ public class KafkaHelper {
      */
     public void addConsumer(String taskId, String topic, List<Integer> partitionList,
                             ConsumerTaskConfig consumerTaskConfig,
-                            Consumer<List<ConsumerRecord<String, String>>> consumer,
-                            TaskRestartCache taskRestartCache) {
+                            Consumer<Map<String, StarRocksBufferData>> consumer,
+                            TaskRestartCache taskRestartCache,
+                            StarrocksSyncService starrocksSyncService,
+                            List<MappingConfig> mappingConfigList) {
         MDC.put("taskId", taskId);
         LOGGER.info("taskId:{}，将为topic：[{}] 创建消费者, 消费者groupId:[{}]",taskId, topic, consumerTaskConfig.getGroupId());
         MDC.remove("taskId");
-        consumerContainer.addConsumer(taskId, topic, partitionList, consumerTaskConfig, consumer, taskRestartCache);
+        consumerContainer.addConsumer(taskId, topic, partitionList, consumerTaskConfig, consumer, taskRestartCache,
+                starrocksSyncService, mappingConfigList);
     }
 
     /**

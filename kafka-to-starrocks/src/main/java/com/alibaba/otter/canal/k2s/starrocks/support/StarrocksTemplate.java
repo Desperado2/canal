@@ -67,7 +67,7 @@ public class StarrocksTemplate {
         String srDataBase = srMapping.getDstDatabase();
         String srTable = srMapping.getDstTable();
         MDC.put("taskId", taskId);
-        logger.info("taskId:{}, Sync table {}.{}", database, table, taskId);
+        logger.debug("taskId:{}, Sync table {}.{}", database, table, taskId);
         MDC.remove("taskId");
         List<String> columnList = srMapping.getContent().getColumns().stream()
                 .map(MappingConfig.MappingData.ColumnMapping::getDstField).collect(Collectors.toList());
@@ -83,7 +83,7 @@ public class StarrocksTemplate {
         try {
             if (bufferData.getData().size() != 0 && bufferEntity.getBatchSize() > 0) {
                 MDC.put("taskId", taskId);
-                logger.info(String.format("StarRocks buffer Sinking triggered: db: [%s] table: [%s] rows[%d] label[%s].", database, table, bufferData.getData().size(), bufferEntity.getLabel()));
+                logger.debug(String.format("StarRocks buffer Sinking triggered: db: [%s] table: [%s] rows[%d] label[%s].", database, table, bufferData.getData().size(), bufferEntity.getLabel()));
                 MDC.remove("taskId");
                 starRocksSinkManager.getStarrocksStreamLoadVisitor().doStreamLoad(taskId,bufferEntity);
             }

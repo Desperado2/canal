@@ -43,7 +43,7 @@ public class StarrocksSyncService {
      * @param mappingConfig 字段配置
      * @param dmls 语句
      */
-    public void sync(String taskId, Map<String, Map<String, MappingConfig>> mappingConfig, List<Dml> dmls) {
+    public Map<String, StarRocksBufferData> transform(String taskId, Map<String, Map<String, MappingConfig>> mappingConfig, List<Dml> dmls) {
         Map<String, StarRocksBufferData> batchData = new HashMap<>();
         for (Dml dml : dmls) {
             if(dml.getIsDdl() != null && dml.getIsDdl() && StringUtils.isNotEmpty(dml.getSql())) {
@@ -80,6 +80,17 @@ public class StarrocksSyncService {
                 rocksBufferData.setData(bufferData);
             }
         }
+        return batchData;
+    }
+
+
+    /**
+     * 同步
+     * @param mappingConfig 字段配置
+     * @param dmls 语句
+     */
+    public void sync(String taskId, Map<String, Map<String, MappingConfig>> mappingConfig, List<Dml> dmls) {
+        Map<String, StarRocksBufferData> batchData = transform(taskId, mappingConfig, dmls);
         sync(taskId,batchData);
     }
 
@@ -88,7 +99,7 @@ public class StarrocksSyncService {
      * 批量同步
      * @param batchData 批量数据
      */
-    private void sync(String taskId,Map<String, StarRocksBufferData> batchData) {
+    public void sync(String taskId, Map<String, StarRocksBufferData> batchData) {
         for (Map.Entry<String, StarRocksBufferData> bufferDataEntry : batchData.entrySet()) {
             starrocksTemplate.sink(taskId, bufferDataEntry.getValue());
         }

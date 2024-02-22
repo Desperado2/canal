@@ -162,7 +162,8 @@ public class ConsumerTaskConfigMonitor {
             StarrocksTemplate starrocksTemplate = new StarrocksTemplate(consumerTaskConfig);
             StarrocksSyncService starrocksSyncService = new StarrocksSyncService(starrocksTemplate);
             kafkaHelper.addConsumer(taskId,topic, partitionList, consumerTaskConfig,
-                    new BinlogConsumer(taskId, starrocksSyncService, mappingConfigList), taskRestartCache);
+                    new BinlogConsumer(taskId, starrocksSyncService), taskRestartCache,
+                    starrocksSyncService,mappingConfigList);
             MDC.put("taskId", taskId);
             LOGGER.info("taskId：{}，创建消费者成功，topic:{}, groupId:{}", taskId, topic, consumerTaskConfig.getGroupId());
             MDC.remove("taskId");

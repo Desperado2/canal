@@ -52,8 +52,8 @@ public class KafkaPropertiesHelper {
         Properties properties = new Properties();
         // 不开启自动提交
         properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        properties.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 100000);
-        properties.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 110000);
+        properties.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 10000);
+        properties.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 60000);
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");

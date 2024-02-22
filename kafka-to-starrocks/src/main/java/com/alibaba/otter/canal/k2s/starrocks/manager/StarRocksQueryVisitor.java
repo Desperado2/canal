@@ -87,12 +87,12 @@ public class StarRocksQueryVisitor implements Serializable {
             return version;
         } catch (ClassNotFoundException se) {
             MDC.put("taskId", taskId);
-            LOG.info(String.format("taskId: %s, Failed to find jdbc driver." + se.getMessage(), taskId));
+            LOG.error(String.format("taskId: %s, Failed to find jdbc driver." + se.getMessage(), taskId));
             MDC.remove("task");
             throw new IllegalArgumentException("Failed to find jdbc driver." + se.getMessage(), se);
         } catch (SQLException se) {
             MDC.put("taskId", taskId);
-            LOG.info(String.format("taskId: %s, Failed to get StarRocks version. " + se.getMessage(), taskId));
+            LOG.error(String.format("taskId: %s, Failed to get StarRocks version. " + se.getMessage(), taskId));
             MDC.remove("task");
             throw new IllegalArgumentException("Failed to get StarRocks version. " + se.getMessage(), se);
         }

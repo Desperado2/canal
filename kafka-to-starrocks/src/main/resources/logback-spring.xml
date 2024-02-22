@@ -63,7 +63,7 @@
 	</appender>
 
 	<logger name="com.alibaba.otter.canal.k2s" additivity="false">
-		<level value="INFO" />
+		<level value="DEBUG" />
 		<appender-ref ref="K2S-ROOT" />
 		<appender-ref ref="K2S-META" />
 		<appender-ref ref="STDOUT" />

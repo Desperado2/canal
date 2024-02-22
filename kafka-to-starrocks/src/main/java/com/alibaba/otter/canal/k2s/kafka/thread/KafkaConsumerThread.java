@@ -2,14 +2,14 @@ package com.alibaba.otter.canal.k2s.kafka.thread;
 
 import com.alibaba.otter.canal.k2s.cache.TaskRestartCache;
 import com.alibaba.otter.canal.k2s.kafka.model.ConsumerInfo;
+import com.alibaba.otter.canal.k2s.starrocks.config.MappingConfig;
+import com.alibaba.otter.canal.k2s.starrocks.service.StarrocksSyncService;
+import com.alibaba.otter.canal.k2s.starrocks.support.StarRocksBufferData;
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.Metric;
-import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.tomcat.util.buf.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -38,8 +37,10 @@ public class KafkaConsumerThread extends Thread{
 
     private final String taskId;
     private final KafkaConsumer<String, String> kafkaConsumer;
-    private final Consumer<List<ConsumerRecord<String, String>>> consumer;
+    private final Consumer<Map<String, StarRocksBufferData>> consumer;
     private final TaskRestartCache taskRestartCache;
+    private final StarrocksSyncService starrocksSyncService;
+    private final List<MappingConfig> mappingConfigList;
     /**
      * 缓存消费的消息
      */
@@ -61,44 +62,45 @@ public class KafkaConsumerThread extends Thread{
                                Integer commitBatch,
                                Integer commitTimeout,
                                KafkaConsumer<String, String> kafkaConsumer,
-                               Consumer<List<ConsumerRecord<String, String>>> consumer,
-                               TaskRestartCache taskRestartCache){
+                               Consumer<Map<String, StarRocksBufferData>> consumer,
+                               TaskRestartCache taskRestartCache,
+                               StarrocksSyncService starrocksSyncService,
+                               List<MappingConfig> mappingConfigList){
         this.kafkaConsumer = kafkaConsumer;
         this.consumer = consumer;
         this.taskId = taskId;
         this.taskRestartCache = taskRestartCache;
         this.commitBatch = commitBatch;
         this.commitTimeout = commitTimeout;
+        this.mappingConfigList = mappingConfigList;
         buffer = new CopyOnWriteArrayList<>();
         scheduler = Executors.newScheduledThreadPool(1);
+        this.starrocksSyncService = starrocksSyncService;
     }
 
     @Override
     public void run() {
         try{
-            // 定时任务：在超时后提交偏移量
-            Runnable commitTask = () -> {
-                if (!buffer.isEmpty()) {
-                    processAndCommitMessages(buffer, kafkaConsumer);
-                    buffer.clear(); // 清空缓存
-                }
-            };
+            // 创建缓存消费的消息处理器
+            KafkaMessageHandler messageHandler = new KafkaMessageHandler(commitBatch, commitTimeout, scheduler, records -> {
+                // 提交数据写kafka
+                consumer.accept(records);
+                // 提交偏移量
+                MDC.put("taskId", taskId);
+                kafkaConsumer.commitSync();
+                LOGGER.debug("提交偏移量");
+                MDC.remove("taskId");
+            },starrocksSyncService, mappingConfigList, taskId);
+
             while (true){
                 if(isInterrupted()){
                     throw new InterruptedException();
                 }
-                // 使用 scheduleAtFixedRate() 方法按固定的时间间隔执行提交偏移量的操作
-                scheduler.scheduleAtFixedRate(commitTask, commitTimeout, commitTimeout, TimeUnit.MILLISECONDS);
                 // 拉取kafka消息
-                ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(1000));
+                ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(100));
                 for (ConsumerRecord<String, String> record : records) {
                     // 处理消息
-                    buffer.add(record);
-                    // 达到提交偏移量的条件时，取消定时任务并处理消息并提交偏移量
-                    if (buffer.size() >= commitBatch) {
-                        processAndCommitMessages(buffer, kafkaConsumer);
-                        buffer.clear(); // 清空缓存
-                    }
+                    messageHandler.addRecord(record);
                 }
             }
         }catch (InterruptedException e){
@@ -121,10 +123,6 @@ public class KafkaConsumerThread extends Thread{
         }finally {
             try {
                 scheduler.shutdown(); // 在关闭消费者之前，关闭定时任务
-                // 在关闭消费者之前，确保最后一次提交偏移量
-                if (!buffer.isEmpty()) {
-                    processAndCommitMessages(buffer, kafkaConsumer);
-                }
                 kafkaConsumer.close();
             } catch (Exception ex) {
             }
@@ -148,15 +146,4 @@ public class KafkaConsumerThread extends Thread{
         return consumerInfoList;
     }
 
-    /**
-     * 处理消息并提交偏移量
-     * @param buffer 数据
-     * @param kafkaConsumer  kafka消费者
-     */
-    private void processAndCommitMessages(List<ConsumerRecord<String, String>> buffer, KafkaConsumer<String, String> kafkaConsumer) {
-        // 处理消息的逻辑
-        consumer.accept(buffer);
-        // 提交偏移量
-        kafkaConsumer.commitSync();
-    }
 }

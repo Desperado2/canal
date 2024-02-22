@@ -5,10 +5,12 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.otter.canal.k2s.starrocks.config.MappingConfig;
 import com.alibaba.otter.canal.k2s.starrocks.service.StarrocksSyncService;
 import com.alibaba.otter.canal.k2s.starrocks.support.Dml;
+import com.alibaba.otter.canal.k2s.starrocks.support.StarRocksBufferData;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,46 +23,25 @@ import java.util.function.Consumer;
  * @author mujingjing
  * @date 2024/2/4
  **/
-public class BinlogConsumer implements Consumer<List<ConsumerRecord<String, String>>> {
+public class BinlogConsumer implements Consumer<Map<String, StarRocksBufferData>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BinlogConsumer.class);
 
     private final StarrocksSyncService starrocksSyncService;
 
-    private final Map<String, Map<String, MappingConfig>> mappingConfig;
-
     private final String taskId;
 
-    public BinlogConsumer(String taskId,StarrocksSyncService starrocksSyncService, List<MappingConfig> mappingConfigList) {
+    public BinlogConsumer(String taskId,StarrocksSyncService starrocksSyncService) {
         this.taskId = taskId;
         this.starrocksSyncService = starrocksSyncService;
-        this.mappingConfig = transform(mappingConfigList);
     }
 
-    private Map<String, Map<String, MappingConfig>> transform(List<MappingConfig> mappingConfigList){
-        Map<String, Map<String, MappingConfig>> mapMap = new HashMap<>();
-        for (MappingConfig mappingConfig : mappingConfigList) {
-            String srcDatabase = mappingConfig.getSrcDatabase();
-            String srcTable = mappingConfig.getSrcTable();
-            if(mapMap.containsKey(srcDatabase)){
-                mapMap.get(srcDatabase).put(srcTable, mappingConfig);
-            }else{
-                Map<String, MappingConfig> tableMap = new HashMap<>();
-                tableMap.put(srcTable, mappingConfig);
-                mapMap.put(srcDatabase, tableMap);
-            }
-        }
-        return mapMap;
-    }
 
     @Override
-    public void accept(List<ConsumerRecord<String, String>> consumerRecords) {
-        List<Dml> dmlList = new ArrayList<>();
-        for (ConsumerRecord<String, String> consumerRecord : consumerRecords) {
-            String value = consumerRecord.value();
-            dmlList.add(JSONObject.toJavaObject(JSONObject.parseObject(value), Dml.class));
-        }
-        // 转换
-        starrocksSyncService.sync(taskId,mappingConfig, dmlList);
+    public void accept(Map<String, StarRocksBufferData> bufferDataMap) {
+        MDC.put("taskId", taskId);
+        LOGGER.debug("taskId：{}， 写数据到starrocks", taskId);
+        MDC.remove("taskId");
+        starrocksSyncService.sync(taskId, bufferDataMap);
     }
 }

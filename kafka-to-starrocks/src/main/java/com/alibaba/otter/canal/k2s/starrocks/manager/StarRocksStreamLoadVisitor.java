@@ -92,7 +92,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
             .toString();
 
         MDC.put("taskId", taskId);
-        LOG.info(String.format("Start to join batch data: label[%s].", bufferEntity.getLabel()));
+        LOG.debug(String.format("Start to join batch data: label[%s].", bufferEntity.getLabel()));
         MDC.remove("taskId");
         Map<String, Object> loadResult = doHttpPut(taskId, loadUrl, bufferEntity.getLabel(), joinRows(bufferEntity.getBuffer(),  (int) bufferEntity.getBatchSize()));
 
@@ -263,7 +263,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
     @SuppressWarnings("unchecked")
     private Map<String, Object> doHttpPut(String taskId, String loadUrl, String label, byte[] data) throws IOException {
         MDC.put("taskId", taskId);
-        LOG.info(String.format("Executing stream load to: '%s', size: '%s', thread: %d", loadUrl, data.length, Thread.currentThread().getId()));
+        LOG.debug(String.format("Executing stream load to: '%s', size: '%s', thread: %d", loadUrl, data.length, Thread.currentThread().getId()));
         MDC.remove("taskId");
         final HttpClientBuilder httpClientBuilder = HttpClients.custom()
             .setRedirectStrategy(new DefaultRedirectStrategy() {
