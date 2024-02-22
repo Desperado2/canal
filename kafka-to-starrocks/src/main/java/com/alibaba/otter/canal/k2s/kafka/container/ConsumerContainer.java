@@ -86,8 +86,10 @@ public class ConsumerContainer {
         KafkaConsumerThread kafkaConsumerThread = new KafkaConsumerThread(taskId,
                 consumerTaskConfig.getCommitBatch(),
                 consumerTaskConfig.getCommitTimeout(),
-                stringStringKafkaConsumer, consumer, taskRestartCache,
-                starrocksSyncService, mappingConfigList);
+                stringStringKafkaConsumer,
+                taskRestartCache,
+                starrocksSyncService,
+                mappingConfigList);
         kafkaConsumerThread.start();
         kafkaConsumerThreadMap.put(topic, kafkaConsumerThread);
         MDC.put("taskId", taskId);

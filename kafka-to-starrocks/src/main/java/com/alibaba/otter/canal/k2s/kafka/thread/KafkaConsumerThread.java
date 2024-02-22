@@ -23,6 +23,10 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -37,10 +41,10 @@ public class KafkaConsumerThread extends Thread{
 
     private final String taskId;
     private final KafkaConsumer<String, String> kafkaConsumer;
-    private final Consumer<Map<String, StarRocksBufferData>> consumer;
     private final TaskRestartCache taskRestartCache;
     private final StarrocksSyncService starrocksSyncService;
     private final List<MappingConfig> mappingConfigList;
+    private final ReadWriteLock readWriteLock;
     /**
      * 缓存消费的消息
      */
@@ -62,12 +66,10 @@ public class KafkaConsumerThread extends Thread{
                                Integer commitBatch,
                                Integer commitTimeout,
                                KafkaConsumer<String, String> kafkaConsumer,
-                               Consumer<Map<String, StarRocksBufferData>> consumer,
                                TaskRestartCache taskRestartCache,
                                StarrocksSyncService starrocksSyncService,
                                List<MappingConfig> mappingConfigList){
         this.kafkaConsumer = kafkaConsumer;
-        this.consumer = consumer;
         this.taskId = taskId;
         this.taskRestartCache = taskRestartCache;
         this.commitBatch = commitBatch;
@@ -76,6 +78,7 @@ public class KafkaConsumerThread extends Thread{
         buffer = new CopyOnWriteArrayList<>();
         scheduler = Executors.newScheduledThreadPool(1);
         this.starrocksSyncService = starrocksSyncService;
+        readWriteLock = new ReentrantReadWriteLock();
     }
 
     @Override
@@ -84,23 +87,32 @@ public class KafkaConsumerThread extends Thread{
             // 创建缓存消费的消息处理器
             KafkaMessageHandler messageHandler = new KafkaMessageHandler(commitBatch, commitTimeout, scheduler, records -> {
                 // 提交数据写kafka
-                consumer.accept(records);
-                // 提交偏移量
-                MDC.put("taskId", taskId);
-                kafkaConsumer.commitSync();
-                LOGGER.debug("提交偏移量");
-                MDC.remove("taskId");
-            },starrocksSyncService, mappingConfigList, taskId);
+                LOGGER.debug("开始提交偏移量");
+                final Lock lock = readWriteLock.writeLock();
+                lock.lock();
+                try {
+                    LOGGER.debug("提交偏移量");
+                    this.kafkaConsumer.commitSync();
+                } finally {
+                    lock.unlock();
+                }
+            },starrocksSyncService, mappingConfigList,taskId);
 
             while (true){
                 if(isInterrupted()){
                     throw new InterruptedException();
                 }
                 // 拉取kafka消息
-                ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(100));
-                for (ConsumerRecord<String, String> record : records) {
-                    // 处理消息
-                    messageHandler.addRecord(record);
+                final Lock lock = readWriteLock.readLock();
+                lock.lock();
+                try {
+                    ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(100));
+                    for (ConsumerRecord<String, String> record : records) {
+                        // 处理消息
+                        messageHandler.addRecord(record);
+                    }
+                } finally {
+                    lock.unlock();
                 }
             }
         }catch (InterruptedException e){

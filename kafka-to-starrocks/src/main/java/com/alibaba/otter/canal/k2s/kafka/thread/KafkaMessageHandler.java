@@ -34,14 +34,14 @@ public class KafkaMessageHandler implements Runnable{
     private final int commitBatch;
     private final long commitTimeout;
     private final ScheduledExecutorService scheduler;
-    private final Consumer<Map<String, StarRocksBufferData>> dataConsumer;
+    private final Consumer<String> dataConsumer;
     private final StarrocksSyncService starrocksSyncService;
     private final Map<String, Map<String, MappingConfig>> mappingConfig;
     private final String taskId;
 
 
     public KafkaMessageHandler(int commitBatch, long commitTimeout, ScheduledExecutorService scheduler,
-                               Consumer<Map<String, StarRocksBufferData>> dataConsumer,
+                               Consumer<String> dataConsumer,
                                StarrocksSyncService starrocksSyncService, List<MappingConfig> mappingConfigList,
                                String taskId) {
         this.commitBatch = commitBatch;
@@ -77,7 +77,7 @@ public class KafkaMessageHandler implements Runnable{
             MDC.remove("task");
             if (dataCount >= commitBatch) {
                 MDC.put("taskId", taskId);
-                LOGGER.debug("kafka数据缓存数量:{}>500,提交数据", dataCount);
+                LOGGER.debug("kafka数据缓存数量:{}>{},提交数据", dataCount, commitBatch);
                 MDC.remove("task");
                 run(); // 达到提交条件，立即提交
             }
@@ -88,7 +88,8 @@ public class KafkaMessageHandler implements Runnable{
     public void run() {
         synchronized (buffer) {
             if (!buffer.isEmpty()) {
-                dataConsumer.accept(new HashMap<>(buffer));
+                starrocksSyncService.sync(taskId, new HashMap<>(buffer));
+                dataConsumer.accept(taskId);
                 buffer.clear();
                 MDC.put("taskId", taskId);
                 LOGGER.debug("成功提交数据，触发条件：数据量达标");
@@ -99,15 +100,23 @@ public class KafkaMessageHandler implements Runnable{
 
     private void scheduleCommitTask() {
         scheduler.scheduleAtFixedRate(() -> {
-            synchronized (buffer) {
-                if (!buffer.isEmpty()) {
-                    run();
-                    MDC.put("taskId", taskId);
-                    LOGGER.debug("成功提交数据，触发条件：超时");
-                    MDC.remove("task");
-                }
-            }
-        }, commitTimeout, commitTimeout, TimeUnit.MILLISECONDS);
+           try {
+               synchronized (buffer) {
+                   if (!buffer.isEmpty()) {
+                       // 提交数据写kafka
+                       starrocksSyncService.sync(taskId, new HashMap<>(buffer));
+                       dataConsumer.accept(taskId);
+                       buffer.clear();
+                       // 提交偏移量
+                       MDC.put("taskId", taskId);
+                       LOGGER.debug("成功提交数据，触发条件：超时");
+                       MDC.remove("task");
+                   }
+               }
+           }catch (Exception e){
+               LOGGER.error("定时任务执行异常", e);
+           }
+        }, 0, commitTimeout, TimeUnit.MILLISECONDS);
     }
 
     public void shutdown() {
