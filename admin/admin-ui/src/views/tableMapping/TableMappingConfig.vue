@@ -27,7 +27,6 @@
       <br>
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${SYNC_TIME}: 表示该条ddl的同步时间。<br>
       <br>
-<!--      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;S_FUNC.函数名称: 目标数据库支持的函数。<br>-->
       <br>
       &nbsp;&nbsp; B: dstField: 目标表的字段名称<br>
       <br>
@@ -61,7 +60,7 @@
 </template>
 
 <script>
-import { getTableMapping, updateTableMappingContent,getTableMappingTemplate } from '@/api/tableMapping'
+import { getTableMapping, updateTableMappingContent, getTableMappingTemplate } from '@/api/tableMapping'
 export default {
   components: {
     editor: require('vue2-ace-editor')
@@ -145,7 +144,7 @@ export default {
         this.form.content = res.data
       })
     },
-    showSupportingPaper(){
+    showSupportingPaper() {
       this.isShowSupportingPaper = !this.isShowSupportingPaper
     }
   }

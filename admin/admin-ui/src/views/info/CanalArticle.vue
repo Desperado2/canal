@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <el-collapse v-model="activeNames" @change="handleChange">
-      <el-collapse-item  name="1" class="line-text">
+      <el-collapse-item name="1" class="line-text">
         <template slot="title">
           <div class="line_header">表的正则配置</div>
         </template>
@@ -13,19 +13,19 @@
           :data="tableRegexInfo"
           stripe
           show-header="false"
-          style="width: 100%">
+          style="width: 100%"
+        >
           <el-table-column
             prop="name"
             width="200px"
-            label="表达式">
-          </el-table-column>
+            label="表达式"
+          />
           <el-table-column
             prop="desc"
-            label="说明">
-          </el-table-column>
+            label="说明"
+          />
         </el-table>
-
-        <div></div>
+        <div />
         <div>详细参考文档:<a href="https://github.com/alibaba/canal/wiki/AdminGuide" target="_blank" style="color: #1482f0">Github文档</a> </div>
       </el-collapse-item>
       <el-collapse-item title="" name="2">
@@ -39,18 +39,20 @@
           :data="partitionHashInfo"
           stripe
           show-header="false"
-          style="width: 100%">
+          style="width: 100%"
+        >
           <el-table-column
             prop="name"
             width="200px"
-            label="表达式">
-          </el-table-column>
+            label="表达式"
+          />
+
           <el-table-column
             prop="desc"
-            label="说明">
-          </el-table-column>
+            label="说明"
+          />
         </el-table>
-        <div></div>
+        <div />
         <div>详细参考文档:<a href="https://github.com/alibaba/canal/wiki/Canal-Kafka-RocketMQ-QuickStart" target="_blank" style="color: #1482f0">Github文档</a> </div>
       </el-collapse-item>
       <el-collapse-item title="" name="3">
@@ -62,16 +64,18 @@
           :data="consumerInfo"
           stripe
           show-header="false"
-          style="width: 100%">
+          style="width: 100%"
+        >
           <el-table-column
             prop="name"
             width="200px"
-            label="字段名称">
-          </el-table-column>
+            label="字段名称"
+          />
+
           <el-table-column
             prop="desc"
-            label="说明">
-          </el-table-column>
+            label="说明"
+          />
         </el-table>
       </el-collapse-item>
       <el-collapse-item title="" name="4">
@@ -83,7 +87,7 @@
         <div>2.原始表：表示原始mysql数据表的名称，支持Perl表达式,可参数 表的正则配置。</div>
         <div>3.目标库：表示需要写入的starrocks数据库。</div>
         <div>4.目标表：表示需要写入的starrocks数据表。</div>
-        <div></div>
+        <div />
         <div style="font: 16px bold; color: red">其配置文件说明如下</div>
         <div>1.columns: 原表与目标表直接的字段级映射。</div>
         <div>&nbsp;&nbsp;&nbsp;A: srcField: 原表字段名称，除了支持原表的字段之外，还支持以下值：</div>
@@ -108,49 +112,59 @@ export default {
   data() {
     return {
       activeNames: ['1'],
-      consumerInfo:[
+      consumerInfo: [
         {
-        name: 'kafkaBootstrap',
-        desc: 'kafka的地址，如:192.168.20.1:9092,192.168.20.2:9092'
-      },{
-        name: 'topics',
-        desc: '需要消费的topic列表，如:["topic1", "topic2"]'
-      },{
-        name: 'mappingEnv',
-        desc: 'Table Mapping的环境'
-      },{
-        name: 'jdbcUrl',
-        desc: 'starrocks的jdbc连接地址，不需要写数据库，如:jdbc:mysql://127.0.0.1:9030/'
-      },{
-        name: 'feHost',
-        desc: 'fe的host地址，用于streamLoad，如:127.0.0.1'
-      },{
-        name: 'feHttpPort',
-        desc: 'fe的端口，用于streamLoad，如:8050'
-      },{
-        name: 'userName',
-        desc: 'starrocks进行jdbc操作的用户名'
-      },{
-        name: 'passWord',
-        desc: 'starrocks进行jdbc操作的密码'
-      },{
-        name: 'consumerPolicy',
-        desc: '消费策略，有如下四种消费策略，\n ' +
-          ' 1.E-C:如果消费过，则继续从消费点开始消费，如果没有消费过，则从头开始消费。\n' +
-          ' 2:E-B:无论是否消费过，都从头开始消费。\n' +
-          ' 3:L-C:如果消费过，则继续从消费点开始消费，如果没有消费过，则从最新数据开始消费。\n' +
-          ' 4:L-B:无论是否消费过，都从最新数据开始消费。\n'+
-          ' 如不是该四种情况，默认为：E-C'
+          name: 'kafkaBootstrap',
+          desc: 'kafka的地址，如:192.168.20.1:9092,192.168.20.2:9092'
+        },
+        {
+          name: 'topics',
+          desc: '需要消费的topic列表，如:["topic1", "topic2"]'
+        },
+        {
+          name: 'mappingEnv',
+          desc: 'Table Mapping的环境'
+        },
+        {
+          name: 'jdbcUrl',
+          desc: 'starrocks的jdbc连接地址，不需要写数据库，如:jdbc:mysql://127.0.0.1:9030/'
+        },
+        {
+          name: 'feHost',
+          desc: 'fe的host地址，用于streamLoad，如:127.0.0.1'
+        },
+        {
+          name: 'feHttpPort',
+          desc: 'fe的端口，用于streamLoad，如:8050'
+        },
+        {
+          name: 'userName',
+          desc: 'starrocks进行jdbc操作的用户名'
+        },
+        {
+          name: 'passWord',
+          desc: 'starrocks进行jdbc操作的密码'
+        },
+        {
+          name: 'consumerPolicy',
+          desc: '消费策略，有如下四种消费策略，\n ' +
+            ' 1.E-C:如果消费过，则继续从消费点开始消费，如果没有消费过，则从头开始消费。\n' +
+            ' 2:E-B:无论是否消费过，都从头开始消费。\n' +
+            ' 3:L-C:如果消费过，则继续从消费点开始消费，如果没有消费过，则从最新数据开始消费。\n' +
+            ' 4:L-B:无论是否消费过，都从最新数据开始消费。\n' +
+            ' 如不是该四种情况，默认为：E-C'
 
-      },{
+        },
+        {
           name: 'commitBatch',
           desc: '批量写入kafka的最大数据条数'
-      },{
+        },
+        {
           name: 'commitTimeout',
           desc: '批量写入kafka的最大时间限制，单位:毫秒'
-     }
+        }
       ],
-      tableRegexInfo:[
+      tableRegexInfo: [
         {
           name: '.*   or  .*\\\\..*',
           desc: '所有表'
@@ -175,34 +189,34 @@ export default {
       partitionHashInfo: [
         {
           name: 'test\\\\.test:pk1^pk2',
-          desc:'指定匹配的单表，对应的hash字段为pk1 + pk2'
+          desc: '指定匹配的单表，对应的hash字段为pk1 + pk2'
         },
         {
           name: '.*\\\\..*:id',
-          desc:'正则匹配，指定所有正则匹配的表对应的hash字段为id'
+          desc: '正则匹配，指定所有正则匹配的表对应的hash字段为id'
         },
         {
           name: '.*\\\\..*:$pk$',
-          desc:'正则匹配，指定所有正则匹配的表对应的hash字段为表主键(自动查找)'
+          desc: '正则匹配，指定所有正则匹配的表对应的hash字段为表主键(自动查找)'
         },
         {
           name: '',
-          desc:'匹配规则啥都不写，则默认发到0这个partition上'
+          desc: '匹配规则啥都不写，则默认发到0这个partition上'
         },
         {
           name: '.*\\\\..*',
-          desc:'不指定pk信息的正则匹配，将所有正则匹配的表,对应的hash字段为表名'
+          desc: '不指定pk信息的正则匹配，将所有正则匹配的表,对应的hash字段为表名'
         },
         {
           name: 'test\\\\.test:id,.\\\\..* ',
-          desc:'针对test的表按照id散列,其余的表按照table散列'
-        },
+          desc: '针对test的表按照id散列,其余的表按照table散列'
+        }
       ]
     }
   },
   methods: {
     handleChange(val) {
-      console.log(val);
+      console.log(val)
     }
   }
 }
