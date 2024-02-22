@@ -106,7 +106,7 @@ public class KafkaConsumerThread extends Thread{
                 final Lock lock = readWriteLock.readLock();
                 lock.lock();
                 try {
-                    ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(100));
+                    ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(500));
                     for (ConsumerRecord<String, String> record : records) {
                         // 处理消息
                         messageHandler.addRecord(record);
