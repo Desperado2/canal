@@ -58,6 +58,7 @@ public class KafkaPropertiesHelper {
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         properties.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10);
+        properties.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 1000);
         properties.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 1000);
         return properties;
     }

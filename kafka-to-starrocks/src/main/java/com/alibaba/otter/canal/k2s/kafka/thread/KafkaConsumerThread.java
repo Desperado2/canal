@@ -85,14 +85,14 @@ public class KafkaConsumerThread extends Thread{
     public void run() {
         try{
             // 创建缓存消费的消息处理器
-            KafkaMessageHandler messageHandler = new KafkaMessageHandler(commitBatch, commitTimeout, scheduler, records -> {
+            KafkaMessageHandler messageHandler = new KafkaMessageHandler(commitBatch, commitTimeout, records -> {
                 // 提交数据写kafka
                 LOGGER.debug("开始提交偏移量");
                 final Lock lock = readWriteLock.writeLock();
                 lock.lock();
                 try {
                     LOGGER.debug("提交偏移量");
-                    this.kafkaConsumer.commitSync();
+                    this.kafkaConsumer.commitAsync();
                 } finally {
                     lock.unlock();
                 }
@@ -104,15 +104,16 @@ public class KafkaConsumerThread extends Thread{
                 }
                 // 拉取kafka消息
                 final Lock lock = readWriteLock.readLock();
+                ConsumerRecords<String, String> records = null;
                 lock.lock();
                 try {
-                    ConsumerRecords<String, String> records = kafkaConsumer.poll(Duration.ofMillis(500));
-                    for (ConsumerRecord<String, String> record : records) {
-                        // 处理消息
-                        messageHandler.addRecord(record);
-                    }
+                    records = kafkaConsumer.poll(Duration.ofMillis(500));
                 } finally {
                     lock.unlock();
+                }
+                for (ConsumerRecord<String, String> record : records) {
+                    // 处理消息
+                    messageHandler.addRecord(record);
                 }
             }
         }catch (InterruptedException e){

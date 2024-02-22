@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -39,18 +40,17 @@ public class KafkaMessageHandler implements Runnable{
     private final Map<String, Map<String, MappingConfig>> mappingConfig;
     private final String taskId;
 
-
-    public KafkaMessageHandler(int commitBatch, long commitTimeout, ScheduledExecutorService scheduler,
+    public KafkaMessageHandler(int commitBatch, long commitTimeout,
                                Consumer<String> dataConsumer,
                                StarrocksSyncService starrocksSyncService, List<MappingConfig> mappingConfigList,
                                String taskId) {
         this.commitBatch = commitBatch;
         this.commitTimeout = commitTimeout;
-        this.scheduler = scheduler;
         this.dataConsumer = dataConsumer;
         this.starrocksSyncService = starrocksSyncService;
         this.mappingConfig = transform(mappingConfigList);
         this.taskId = taskId;
+        this.scheduler = Executors.newScheduledThreadPool(10);
         scheduleCommitTask();
         MDC.put("taskId", taskId);
         LOGGER.debug("初始化kafka数据消费缓存对象，commitBatch={}条， commitTimeout={}毫秒", commitBatch, commitTimeout);
@@ -58,30 +58,32 @@ public class KafkaMessageHandler implements Runnable{
     }
 
     public void addRecord(ConsumerRecord<String, String> record) {
-        synchronized (buffer) {
-            List<Dml> dmlList = new ArrayList<>();
-            String value = record.value();
-            dmlList.add(JSONObject.toJavaObject(JSONObject.parseObject(value), Dml.class));
-            // 转换
-            Map<String, StarRocksBufferData> bufferDataMap = starrocksSyncService.transform(taskId, mappingConfig, dmlList);
-            for (Map.Entry<String, StarRocksBufferData> dataEntry : bufferDataMap.entrySet()) {
-                if(buffer.containsKey(dataEntry.getKey())){
-                    buffer.get(dataEntry.getKey()).getData().addAll(dataEntry.getValue().getData());
-                }else{
-                    buffer.put(dataEntry.getKey(), dataEntry.getValue());
+        scheduler.execute(() -> {
+            synchronized (buffer) {
+                List<Dml> dmlList = new ArrayList<>();
+                String value = record.value();
+                dmlList.add(JSONObject.toJavaObject(JSONObject.parseObject(value), Dml.class));
+                // 转换
+                Map<String, StarRocksBufferData> bufferDataMap = starrocksSyncService.transform(taskId, mappingConfig, dmlList);
+                for (Map.Entry<String, StarRocksBufferData> dataEntry : bufferDataMap.entrySet()) {
+                    if(buffer.containsKey(dataEntry.getKey())){
+                        buffer.get(dataEntry.getKey()).getData().addAll(dataEntry.getValue().getData());
+                    }else{
+                        buffer.put(dataEntry.getKey(), dataEntry.getValue());
+                    }
+                }
+                int dataCount = buffer.values().stream().map(it -> it.getData().size()).mapToInt(it -> it).sum();
+                MDC.put("taskId", taskId);
+                LOGGER.debug("kafka数据缓存数量:{}", dataCount);
+                MDC.remove("task");
+                if (dataCount >= commitBatch) {
+                    MDC.put("taskId", taskId);
+                    LOGGER.debug("kafka数据缓存数量:{}>{},提交数据", dataCount, commitBatch);
+                    MDC.remove("task");
+                    run(); // 达到提交条件，立即提交
                 }
             }
-            int dataCount = buffer.values().stream().map(it -> it.getData().size()).mapToInt(it -> it).sum();
-            MDC.put("taskId", taskId);
-            LOGGER.debug("kafka数据缓存数量:{}", dataCount);
-            MDC.remove("task");
-            if (dataCount >= commitBatch) {
-                MDC.put("taskId", taskId);
-                LOGGER.debug("kafka数据缓存数量:{}>{},提交数据", dataCount, commitBatch);
-                MDC.remove("task");
-                run(); // 达到提交条件，立即提交
-            }
-        }
+        });
     }
 
     @Override
@@ -105,13 +107,13 @@ public class KafkaMessageHandler implements Runnable{
                    if (!buffer.isEmpty()) {
                        // 提交数据写kafka
                        starrocksSyncService.sync(taskId, new HashMap<>(buffer));
-                       dataConsumer.accept(taskId);
                        buffer.clear();
-                       // 提交偏移量
-                       MDC.put("taskId", taskId);
-                       LOGGER.debug("成功提交数据，触发条件：超时");
-                       MDC.remove("task");
                    }
+                   dataConsumer.accept(taskId);
+                   // 提交偏移量
+                   MDC.put("taskId", taskId);
+                   LOGGER.debug("成功提交数据，触发条件：超时");
+                   MDC.remove("task");
                }
            }catch (Exception e){
                LOGGER.error("定时任务执行异常", e);
